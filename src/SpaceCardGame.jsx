@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Rocket, Star, Zap, Globe, Sword, Search, Package, Trophy, RotateCcw, Fuel, Apple, Coins, Wrench } from 'lucide-react';
+import { Rocket, Coins, Wrench, Trophy } from 'lucide-react';
 import {
   rarities,
   cardTypes,
@@ -7,6 +7,13 @@ import {
   riskLevels,
   getCardPower,
 } from './utils/constants';
+import Notification from './components/Notification';
+import MenuPhase from './components/MenuPhase';
+import RunPhase from './components/RunPhase';
+import HistoryPhase from './components/HistoryPhase';
+import InventoryPhase from './components/InventoryPhase';
+import PacksPhase from './components/PacksPhase';
+import UpgradePhase from './components/UpgradePhase';
 
 const SpaceCardGame = () => {
   // Game state
@@ -597,27 +604,10 @@ const SpaceCardGame = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900 to-black text-white p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Notification */}
-        {notification && (
-          <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg shadow-lg border-2 max-w-md w-full mx-4 ${
-            notification.type === 'success' ? 'bg-green-800 border-green-600' : 
-            notification.type === 'error' ? 'bg-red-800 border-red-600' : 
-            'bg-blue-800 border-blue-600'
-          }`}>
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-bold text-lg mb-1">{notification.title}</h4>
-                <p className="text-sm whitespace-pre-line">{notification.message}</p>
-              </div>
-              <button 
-                onClick={() => setNotification(null)}
-                className="text-white hover:text-gray-300 ml-2 text-xl"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
+        <Notification
+          notification={notification}
+          onClose={() => setNotification(null)}
+        />
 
         <header className="text-center mb-6">
           <h1 className="text-4xl font-bold text-blue-300 mb-2 flex items-center justify-center gap-2">
@@ -645,655 +635,81 @@ const SpaceCardGame = () => {
           </div>
         </header>
 
-        {/* Menu Phase */}
         {gamePhase === 'menu' && (
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-2xl mb-4">Command Center - Run #{runNumber}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <button 
-                  onClick={startRun}
-                  className="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg transition-colors"
-                >
-                  🚀 Launch Mission
-                </button>
-                <button 
-                  onClick={() => setGamePhase('packs')}
-                  className="bg-green-600 hover:bg-green-700 p-4 rounded-lg transition-colors"
-                >
-                  <Package className="inline mr-2" size={20} />
-                  Card Packs
-                </button>
-                <button 
-                  onClick={() => goToInventory('menu')}
-                  className="bg-orange-600 hover:bg-orange-700 p-4 rounded-lg transition-colors"
-                >
-                  🎒 Inventory ({inventory.length})
-                </button>
-                <button 
-                  onClick={() => setGamePhase('history')}
-                  className="bg-cyan-600 hover:bg-cyan-700 p-4 rounded-lg transition-colors"
-                >
-                  📜 Mission History ({missionHistory.length})
-                </button>
-                <button 
-                  onClick={() => setGamePhase('upgrade')}
-                  className="bg-purple-600 hover:bg-purple-700 p-4 rounded-lg transition-colors"
-                >
-                  ⬆️ Upgrades
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl mb-3">Ship Status</h3>
-                <div className="space-y-2">
-                  <div><strong>{ship.name}</strong> (Level {ship.level})</div>
-                  <div>Fuel Efficiency: {ship.fuelEfficiency} | Weapons: {ship.weapons} | Cargo: {ship.cargo}</div>
-                  <div className="text-sm">
-                    Equipment Slots: 
-                    ⚔️{Object.values(equippedCards.weapon).length}/{ship.equipmentSlots.weapon} 
-                    🔍{Object.values(equippedCards.scanner).length}/{ship.equipmentSlots.scanner} 
-                    ⚡{Object.values(equippedCards.engine).length}/{ship.equipmentSlots.engine} 
-                    🏠{Object.values(equippedCards.habitat).length}/{ship.equipmentSlots.habitat} 
-                    🛡️{Object.values(equippedCards.shield).length}/{ship.equipmentSlots.shield}
-                  </div>
-                  <div className="text-sm text-gray-400">Next mission: {20 + (ship.level * 3)} fuel, {15 + (ship.level * 2)} food</div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl mb-3">Skills</h3>
-                <div className="space-y-2">
-                  <div>🔍 Explorer: Level {skills.explorer}</div>
-                  <div>⚔️ Fighter: Level {skills.fighter}</div>
-                  <div>🏛️ Settler: Level {skills.settler}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl mb-3">Career Statistics</h3>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl">{galaxiesExplored}</div>
-                  <div className="text-sm text-gray-400">Galaxies Explored</div>
-                </div>
-                <div>
-                  <div className="text-2xl">{planetsSettled}</div>
-                  <div className="text-sm text-gray-400">Planets Settled</div>
-                </div>
-                <div>
-                  <div className="text-2xl">{battlesWon}</div>
-                  <div className="text-sm text-gray-400">Battles Won</div>
-                </div>
-              </div>
-            </div>
-
-            {prestigePoints >= 50 && (
-              <div className="bg-purple-800 rounded-lg p-6">
-                <button 
-                  onClick={prestige}
-                  className="bg-purple-600 hover:bg-purple-700 p-3 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <RotateCcw size={20} />
-                  Prestige Reset (Unlock permanent bonuses)
-                </button>
-              </div>
-            )}
-          </div>
+          <MenuPhase
+            runNumber={runNumber}
+            startRun={startRun}
+            setGamePhase={setGamePhase}
+            goToInventory={goToInventory}
+            inventory={inventory}
+            missionHistory={missionHistory}
+            ship={ship}
+            equippedCards={equippedCards}
+            skills={skills}
+            galaxiesExplored={galaxiesExplored}
+            planetsSettled={planetsSettled}
+            battlesWon={battlesWon}
+            prestigePoints={prestigePoints}
+            prestige={prestige}
+          />
         )}
 
-        {/* Run Phase */}
         {gamePhase === 'run' && (
-          <div className="space-y-6">
-            <div className="bg-gray-800 rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl">Mission #{runNumber} - Turn {turn}</h2>
-                <button 
-                  onClick={endRun}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg"
-                >
-                  End Mission
-                </button>
-              </div>
-              
-              {/* Resource bars */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Fuel className="w-4 h-4 text-orange-400" />
-                    <span>Fuel: {fuel}/{maxFuel}</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-orange-400 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${(fuel / maxFuel) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Apple className="w-4 h-4 text-green-400" />
-                    <span>Food: {food}/{maxFood}</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-green-400 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${(food / maxFood) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Current Turn Actions */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl">Choose Your Action</h3>
-                <button 
-                  onClick={() => goToInventory('run')}
-                  className="bg-orange-600 hover:bg-orange-700 px-3 py-1 rounded text-sm"
-                >
-                  🎒 Use Items
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {currentActions.map((action, index) => {
-                  const canAfford = fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap;
-                  const risk = riskLevels[action.risk];
-                  const skillIcons = {
-                    explorer: Search,
-                    fighter: Sword,
-                    settler: Globe
-                  };
-                  const ActionIcon = skillIcons[action.skillType];
-                  
-                  return (
-                    <button
-                      key={action.id}
-                      onClick={() => takeAction(action)}
-                      disabled={!canAfford}
-                      className={`p-4 rounded-lg transition-colors text-left ${
-                        canAfford 
-                          ? 'bg-gray-700 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-500' 
-                          : 'bg-gray-800 border-2 border-gray-700 opacity-50 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <ActionIcon className="w-5 h-5" />
-                        <span className="font-bold text-lg">{action.template.name}</span>
-                        <span className={`text-sm ${risk.color} ml-auto`}>({risk.name})</span>
-                      </div>
-                      
-                      <div className="text-sm text-gray-300 mb-3">
-                        {action.template.description}
-                      </div>
-                      
-                      <div className="text-xs space-y-1">
-                        <div className="text-red-300">
-                          Costs: {action.costs.fuel} fuel, {action.costs.food} food
-                          {action.costs.scrap > 0 && `, ${action.costs.scrap} scrap`}
-                        </div>
-                        <div className="text-green-300">
-                          Rewards: {action.rewards.credits} credits
-                          {action.rewards.data > 0 && `, ${action.rewards.data} data`}
-                          {action.rewards.scrap > 0 && `, ${action.rewards.scrap} scrap`}
-                        </div>
-                        <div className="text-gray-400">
-                          Success chance: {Math.floor(action.successChance * 100)}%
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              
-              {currentActions.length === 0 && (
-                <div className="text-center text-gray-400 py-8">
-                  Generating new opportunities...
-                </div>
-              )}
-            </div>
-
-            {/* Stuck Popup */}
-            {showStuckPopup && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-gray-800 border-2 border-red-600 rounded-lg p-6 max-w-md mx-4">
-                  <h3 className="text-xl font-bold text-red-400 mb-4">⚠️ Insufficient Resources</h3>
-                  <p className="text-gray-300 mb-6">
-                    You don't have enough resources to take any of the available actions. 
-                    You can either end the mission now or use items to restore resources.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={endRun}
-                      className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors"
-                    >
-                      End Mission
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowStuckPopup(false);
-                        goToInventory('run');
-                      }}
-                      className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg transition-colors"
-                    >
-                      Use Items ({inventory.filter(c => !c.isEquipped).length})
-                    </button>
-                    <button
-                      onClick={() => setShowStuckPopup(false)}
-                      className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Mission Log */}
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h3 className="text-lg mb-2">Mission Log</h3>
-              <div 
-                id="mission-log"
-                className="space-y-1 text-sm max-h-32 overflow-y-auto"
-              >
-                {missionLog.map((log, index) => (
-                  <div key={index} className="text-gray-300">{log}</div>
-                ))}
-              </div>
-            </div>
-
-            {/* Mission Summary Popup */}
-            {showMissionSummary && missionSummaryData && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className={`rounded-lg p-6 max-w-md mx-4 border-2 ${
-                  missionSummaryData.status === 'Mission Complete' 
-                    ? 'bg-green-900 border-green-600' 
-                    : 'bg-red-900 border-red-600'
-                }`}>
-                  <h3 className="text-2xl font-bold mb-4 text-center">
-                    {missionSummaryData.status === 'Mission Complete' ? '🎉 Mission Complete!' : '⚠️ Mission Ended'}
-                  </h3>
-                  
-                  <div className="space-y-3 mb-6">
-                    <div className="text-center">
-                      <div className="text-lg font-bold">Mission #{missionSummaryData.runNumber}</div>
-                      <div className="text-gray-300">Completed in {missionSummaryData.turns} turns</div>
-                    </div>
-                    
-                    <div className="bg-gray-800 rounded p-4">
-                      <h4 className="font-bold mb-2">Rewards Earned:</h4>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-purple-400">Prestige:</span>
-                          <span className="float-right font-bold">+{missionSummaryData.gains.prestige}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Scrap:</span>
-                          <span className="float-right font-bold">+{missionSummaryData.gains.scrap}</span>
-                        </div>
-                        <div>
-                          <span className="text-blue-400">Energy:</span>
-                          <span className="float-right font-bold">+{missionSummaryData.gains.energy}</span>
-                        </div>
-                        <div>
-                          <span className="text-green-400">Data:</span>
-                          <span className="float-right font-bold">+{missionSummaryData.gains.data}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={confirmMissionEnd}
-                    className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${
-                      missionSummaryData.status === 'Mission Complete'
-                        ? 'bg-green-600 hover:bg-green-700'
-                        : 'bg-red-600 hover:bg-red-700'
-                    }`}
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <RunPhase
+            runNumber={runNumber}
+            turn={turn}
+            endRun={endRun}
+            fuel={fuel}
+            maxFuel={maxFuel}
+            food={food}
+            maxFood={maxFood}
+            goToInventory={goToInventory}
+            currentActions={currentActions}
+            riskLevels={riskLevels}
+            takeAction={takeAction}
+            scrap={scrap}
+            showStuckPopup={showStuckPopup}
+            setShowStuckPopup={setShowStuckPopup}
+            inventory={inventory}
+            missionLog={missionLog}
+            showMissionSummary={showMissionSummary}
+            missionSummaryData={missionSummaryData}
+            confirmMissionEnd={confirmMissionEnd}
+          />
         )}
 
-        {/* Mission History Phase */}
         {gamePhase === 'history' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl">Mission History</h2>
-              <button 
-                onClick={() => setGamePhase('menu')}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg"
-              >
-                Back to Menu
-              </button>
-            </div>
-
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl mb-4">Completed Missions ({missionHistory.length})</h3>
-              
-              {missionHistory.length === 0 ? (
-                <div className="text-center text-gray-400 py-8">
-                  No missions completed yet. Launch your first mission!
-                </div>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {missionHistory.map((mission) => (
-                    <div key={mission.id} className={`p-4 rounded-lg border-2 ${
-                      mission.status === 'Mission Complete' 
-                        ? 'bg-green-900 border-green-600' 
-                        : 'bg-red-900 border-red-600'
-                    }`}>
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-bold text-lg">Mission #{mission.id}</h4>
-                          <p className="text-sm text-gray-400">{mission.date}</p>
-                        </div>
-                        <div className={`px-2 py-1 rounded text-sm ${
-                          mission.status === 'Mission Complete' 
-                            ? 'bg-green-700 text-green-200' 
-                            : 'bg-red-700 text-red-200'
-                        }`}>
-                          {mission.status}
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-400">Duration:</span>
-                          <div className="font-bold">{mission.turns} turns</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Prestige:</span>
-                          <div className="font-bold text-purple-400">+{mission.gains.prestige}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">Resources:</span>
-                          <div className="font-bold">
-                            +{mission.gains.scrap} scrap, +{mission.gains.energy} energy, +{mission.gains.data} data
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <HistoryPhase missionHistory={missionHistory} setGamePhase={setGamePhase} />
         )}
 
-        {/* Inventory Phase */}
         {gamePhase === 'inventory' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl">Equipment & Inventory</h2>
-              <button 
-                onClick={goBackFromInventory}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg"
-              >
-                {previousPhase === 'run' ? 'Back to Mission' : 'Back to Menu'}
-              </button>
-            </div>
-
-            {/* Equipped Cards */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl mb-4">Equipment Loadout</h3>
-              
-              {Object.entries(ship.equipmentSlots).map(([slotType, maxSlots]) => {
-                const equipped = equippedCards[slotType] || [];
-                const SlotIcon = cardTypes[slotType]?.icon || Star;
-                
-                return (
-                  <div key={slotType} className="mb-6">
-                    <h4 className="text-lg mb-2 flex items-center gap-2">
-                      <SlotIcon className="w-5 h-5" />
-                      {cardTypes[slotType]?.name} Slots ({equipped.length}/{maxSlots})
-                    </h4>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {Array.from({ length: maxSlots }).map((_, slotIndex) => {
-                        const card = equipped[slotIndex];
-                        
-                        return (
-                          <div key={slotIndex} className="relative">
-                            {card ? (
-                              <div className={`${rarities[card.rarity].color} p-3 rounded-lg text-center relative`}>
-                                <SlotIcon className="mx-auto mb-1" size={16} />
-                                <div className="text-xs font-bold">{rarities[card.rarity].name}</div>
-                                <div className="text-xs">{cardTypes[card.type]?.name}</div>
-                                <div className="text-xs mt-1">+{card.equipPower}</div>
-                                <button
-                                  onClick={() => unequipCard(card.id)}
-                                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white text-xs px-1 py-0.5 rounded"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="bg-gray-700 border-2 border-dashed border-gray-600 p-3 rounded-lg flex items-center justify-center min-h-20">
-                                <span className="text-gray-500 text-xs">Empty</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Available Cards */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl mb-4">Available Cards ({inventory.filter(c => !c.isEquipped).length})</h3>
-              
-              {inventory.filter(c => !c.isEquipped).length === 0 ? (
-                <div className="text-center text-gray-400 py-8">
-                  No cards available. Open some card packs!
-                </div>
-              ) : (
-                <div className="space-y-6 max-h-96 overflow-y-auto">
-                  {Object.entries(cardTypes).map(([cardType, cardInfo]) => {
-                    const cardsOfType = inventory
-                      .filter(card => !card.isEquipped && card.type === cardType)
-                      .sort((a, b) => {
-                        // Sort by rarity (legendary first, common last)
-                        const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
-                        return rarityOrder[b.rarity] - rarityOrder[a.rarity];
-                      });
-                    
-                    if (cardsOfType.length === 0) return null;
-                    
-                    const CardIcon = cardInfo.icon || Star;
-                    const equippedOfType = equippedCards[cardType] || [];
-                    const maxSlots = ship.equipmentSlots[cardType] || 0;
-                    
-                    return (
-                      <div key={cardType} className="border-t border-gray-700 pt-4 first:border-t-0 first:pt-0">
-                        <h4 className="text-lg mb-3 flex items-center gap-2">
-                          <CardIcon className="w-5 h-5" />
-                          {cardInfo.name}s ({cardsOfType.length}) 
-                          <span className="text-sm text-gray-400">
-                            - {equippedOfType.length}/{maxSlots} equipped
-                          </span>
-                        </h4>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                          {cardsOfType.map(card => {
-                            const canEquip = equippedOfType.length < maxSlots;
-                            
-                            return (
-                              <div 
-                                key={card.id}
-                                className={`${rarities[card.rarity].color} p-3 rounded-lg text-center text-xs relative`}
-                              >
-                                <CardIcon className="mx-auto mb-1" size={16} />
-                                <div className="font-bold">{rarities[card.rarity].name}</div>
-                                <div>{cardInfo.name}</div>
-                                <div className="mt-1">
-                                  <div>Equip: +{card.equipPower}</div>
-                                  <div>Use: +{card.consumePower}</div>
-                                </div>
-                                
-                                <div className="mt-2 space-y-1">
-                                  {canEquip ? (
-                                    <button
-                                      onClick={() => equipCard(card.id)}
-                                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
-                                    >
-                                      Equip
-                                    </button>
-                                  ) : (
-                                    <div className="text-xs text-gray-400 mb-1">Slots full</div>
-                                  )}
-                                  
-                                  <button
-                                    onClick={() => consumeCard(card.id)}
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded"
-                                  >
-                                    Use
-                                  </button>
-                                </div>
-                                
-                                <div className="text-xs mt-1 text-gray-200">
-                                  <div>⚙️ {cardInfo.equipEffect}</div>
-                                  <div>💊 {cardInfo.consumeEffect}</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+          <InventoryPhase
+            ship={ship}
+            equippedCards={equippedCards}
+            inventory={inventory}
+            goBackFromInventory={goBackFromInventory}
+            previousPhase={previousPhase}
+            equipCard={equipCard}
+            unequipCard={unequipCard}
+            consumeCard={consumeCard}
+          />
         )}
 
-        {/* Card Packs Phase */}
         {gamePhase === 'packs' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl">Card Packs</h2>
-              <button 
-                onClick={() => setGamePhase('menu')}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg"
-              >
-                Back to Menu
-              </button>
-            </div>
-
-            <div className="bg-gray-800 rounded-lg p-6 text-center">
-              <div className="text-6xl mb-4">📦</div>
-              <h3 className="text-xl mb-4">Standard Pack</h3>
-              <p className="mb-4">5 random cards - 50 Credits</p>
-              <button 
-                onClick={openPack}
-                disabled={credits < 50}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-lg text-lg transition-colors"
-              >
-                Open Pack
-              </button>
-            </div>
-
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl mb-4">Recent Cards ({inventory.length})</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 max-h-60 overflow-y-auto">
-                {inventory.slice(-20).map(card => {
-                  const CardIcon = cardTypes[card.type]?.icon || Star;
-                  return (
-                    <div 
-                      key={card.id}
-                      className={`${rarities[card.rarity].color} p-3 rounded-lg text-center text-xs relative`}
-                    >
-                      <CardIcon className="mx-auto mb-1" size={16} />
-                      <div className="font-bold">{rarities[card.rarity].name}</div>
-                      <div>{cardTypes[card.type]?.name}</div>
-                      <div className="mt-1">
-                        <div>Equip: +{card.equipPower}</div>
-                        <div>Use: +{card.consumePower}</div>
-                      </div>
-                      {card.isEquipped && (
-                        <div className="absolute top-1 right-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded">
-                          ⚙️
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <PacksPhase inventory={inventory} credits={credits} setGamePhase={setGamePhase} openPack={openPack} />
         )}
 
-        {/* Upgrade Phase */}
         {gamePhase === 'upgrade' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl">Upgrades</h2>
-              <button 
-                onClick={() => setGamePhase('menu')}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg"
-              >
-                Back to Menu
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl mb-4">Skill Upgrades (Prestige Points)</h3>
-                <div className="space-y-3">
-                  {Object.entries(skills).map(([skill, level]) => (
-                    <div key={skill} className="flex justify-between items-center">
-                      <span className="capitalize">{skill} (Level {level})</span>
-                      <button 
-                        onClick={() => upgradeSkill(skill)}
-                        disabled={prestigePoints < level * 10}
-                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-3 py-1 rounded text-sm"
-                      >
-                        Upgrade ({level * 10} PP)
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl mb-4">Ship Upgrades</h3>
-                <div className="space-y-3">
-                  <div>Current: {ship.name} (Level {ship.level})</div>
-                  <div className="text-sm text-gray-400">
-                    Next upgrade: +1 all stats
-                    {(ship.level + 1) % 2 === 0 && ' +1 weapon slot'}
-                    {(ship.level + 1) % 3 === 0 && ' +1 scanner slot'}
-                    {(ship.level + 1) % 4 === 0 && ' +1 engine slot'}
-                    {(ship.level + 1) % 3 === 1 && ' +1 habitat slot'}
-                    {(ship.level + 1) % 5 === 0 && ' +1 shield slot'}
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Cost: {ship.level * 20} Scrap, {ship.level * 10} Energy
-                  </div>
-                  <button 
-                    onClick={upgradeShip}
-                    disabled={scrap < ship.level * 20 || energy < ship.level * 10}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded"
-                  >
-                    Upgrade Ship
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <UpgradePhase
+            skills={skills}
+            prestigePoints={prestigePoints}
+            upgradeSkill={upgradeSkill}
+            ship={ship}
+            scrap={scrap}
+            energy={energy}
+            upgradeShip={upgradeShip}
+            setGamePhase={setGamePhase}
+          />
         )}
       </div>
     </div>
