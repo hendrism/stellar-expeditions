@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, Info } from 'lucide-react';
 
 const NotificationFeed = ({ feed, open, toggleOpen, clearFeed }) => {
   return (
@@ -22,24 +22,36 @@ const NotificationFeed = ({ feed, open, toggleOpen, clearFeed }) => {
             <button onClick={clearFeed} className="text-sm text-blue-300 hover:text-blue-400">Clear</button>
           </div>
           {feed.length === 0 && <div className="text-gray-400 text-sm">No notifications</div>}
-          {feed.map((n, idx) => (
-            <div
-              key={idx}
-              className={`p-2 rounded border-l-4 ${
-                n.type === 'success'
-                  ? 'bg-green-900 border-green-600'
-                  : n.type === 'error'
-                  ? 'bg-red-900 border-red-600'
-                  : 'bg-blue-900 border-blue-600'
-              }`}
-            >
-              <div className="font-semibold">
-                {n.title}
-                {n.count > 1 && ` x${n.count}`}
+          {feed.map((n, idx) => {
+            const Icon =
+              n.icon ||
+              (n.type === 'success'
+                ? CheckCircle
+                : n.type === 'error'
+                ? XCircle
+                : Info);
+            return (
+              <div
+                key={idx}
+                className={`p-2 rounded border-l-4 flex gap-2 items-start ${
+                  n.type === 'success'
+                    ? 'bg-green-900 border-green-600'
+                    : n.type === 'error'
+                    ? 'bg-red-900 border-red-600'
+                    : 'bg-blue-900 border-blue-600'
+                }`}
+              >
+                <Icon className="w-4 h-4 mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <div className="font-semibold">
+                    {n.title}
+                    {n.count > 1 && ` x${n.count}`}
+                  </div>
+                  <div className="text-sm whitespace-pre-line">{n.message}</div>
+                </div>
               </div>
-              <div className="text-sm whitespace-pre-line">{n.message}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
