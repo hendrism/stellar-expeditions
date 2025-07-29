@@ -15,7 +15,10 @@ const Notification = ({ notification, onClose }) => {
     >
       <div className="flex justify-between items-start">
         <div>
-          <h4 className="font-bold text-lg mb-1">{notification.title}</h4>
+          <h4 className="font-bold text-lg mb-1">
+            {notification.title}
+            {notification.count > 1 && ` x${notification.count}`}
+          </h4>
           <p className="text-sm whitespace-pre-line">{notification.message}</p>
         </div>
         <button onClick={onClose} className="text-white hover:text-gray-300 ml-2 text-xl">
