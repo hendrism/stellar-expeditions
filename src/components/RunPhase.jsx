@@ -18,6 +18,7 @@ const RunPhase = ({
   setShowStuckPopup,
   inventory,
   missionLog,
+  scannerRevealTurns,
   showMissionSummary,
   missionSummaryData,
   confirmMissionEnd
@@ -86,7 +87,9 @@ const RunPhase = ({
                   Rewards: {action.rewards.credits} credits{action.rewards.data > 0 && `, ${action.rewards.data} data`}
                   {action.rewards.scrap > 0 && `, ${action.rewards.scrap} scrap`}
                 </div>
-                <div className="text-gray-400">Success chance: {Math.floor(action.successChance * 100)}%</div>
+                <div className="text-gray-400">
+                  Success chance: {scannerRevealTurns > 0 ? (action.successChance * 100).toFixed(1) : Math.floor(action.successChance * 100)}%
+                </div>
               </div>
             </button>
           );

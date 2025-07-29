@@ -53,6 +53,11 @@ const SpaceCardGame = () => {
     habitat: [],
     shield: []
   });
+
+  // Temporary effects from consuming items
+  const [nextFighterAutoSuccess, setNextFighterAutoSuccess] = useState(false);
+  const [nextActionNoPenalty, setNextActionNoPenalty] = useState(false);
+  const [scannerRevealTurns, setScannerRevealTurns] = useState(0);
   const [ship, setShip] = useState({
     name: 'Rookie Cruiser',
     fuelEfficiency: 1,
@@ -260,13 +265,24 @@ const SpaceCardGame = () => {
   const equipCard = (cardId) => {
     const card = inventory.find(c => c.id === cardId);
     if (!card) return;
-    
+
     const cardType = card.type;
     const currentSlots = equippedCards[cardType];
     const maxSlots = ship.equipmentSlots[cardType];
-    
+
     if (currentSlots.length >= maxSlots) {
-      return; // No available slots of this type
+      // Replace weakest card if new one is stronger
+      const weakestIndex = currentSlots.reduce((minIndex, c, idx, arr) =>
+        c.equipPower < arr[minIndex].equipPower ? idx : minIndex, 0);
+      const weakestCard = currentSlots[weakestIndex];
+      if (weakestCard.equipPower >= card.equipPower) {
+        showNotification('Slots Full', `All ${cardTypes[cardType].name} slots filled with equal or better gear`, 'error');
+        return;
+      }
+      replaceCard(cardId, weakestIndex);
+      setInventory(prev => prev.filter(c => c.id !== weakestCard.id));
+      showNotification('Equipment Replaced', `${card.name} replaced ${weakestCard.name}`, 'info');
+      return;
     }
     
     setInventory(prev => prev.map(c => 
@@ -320,14 +336,16 @@ const SpaceCardGame = () => {
   const consumeCard = (cardId) => {
     const card = inventory.find(c => c.id === cardId);
     if (!card) return;
-    
+
     // Apply consumable effect
     switch (card.type) {
       case 'weapon':
+        setNextFighterAutoSuccess(true);
         addToLog(`💥 Used ${card.name} - next Fighter action guaranteed to succeed!`);
         showNotification('💥 Weapon Activated', `${card.name}\nNext Fighter action guaranteed!`, 'success');
         break;
       case 'scanner':
+        setScannerRevealTurns(card.consumePower);
         addToLog(`🔍 Used ${card.name} - revealed precise action success rates!`);
         showNotification('🔍 Scanner Activated', `${card.name}\nSuccess rates revealed!`, 'success');
         break;
@@ -344,6 +362,7 @@ const SpaceCardGame = () => {
         showNotification('⚡ Fuel Restored', `${card.name}\n+${fuelRestore} fuel supplies`, 'success');
         break;
       case 'shield':
+        setNextActionNoPenalty(true);
         addToLog(`🛡️ Used ${card.name} - next action failure won't cause penalties!`);
         showNotification('🛡️ Shield Activated', `${card.name}\nNext failure protected!`, 'success');
         break;
@@ -372,6 +391,9 @@ const SpaceCardGame = () => {
     setFood(baseFood);
     setMaxFuel(baseFuel);
     setMaxFood(baseFood);
+    setNextFighterAutoSuccess(false);
+    setNextActionNoPenalty(false);
+    setScannerRevealTurns(0);
     setTurn(0);
     setMissionLog([`Mission ${runNumber} begins! Ship fueled and provisioned.`]);
     setCurrentActions(generateTurnActions());
@@ -460,8 +482,14 @@ const SpaceCardGame = () => {
     setScrap(prev => prev - action.costs.scrap);
     setTurn(prev => prev + 1);
     
-    // Determine success using action's calculated success chance
-    const success = Math.random() < action.successChance;
+    // Determine success considering temporary bonuses
+    let success;
+    if (nextFighterAutoSuccess && action.skillType === 'fighter') {
+      success = true;
+      setNextFighterAutoSuccess(false);
+    } else {
+      success = Math.random() < action.successChance;
+    }
     const bonuses = getEquipmentBonuses();
     
     if (success) {
@@ -495,10 +523,14 @@ const SpaceCardGame = () => {
       showNotification(notificationTitle, `${action.template.name}\n${rewardText}${achievementText}`, 'success');
       
     } else {
-      // Handle failure with equipment penalty reduction
+      // Handle failure with optional shield protection
       let failureEffect = '';
       let notificationMessage = '';
-      if (action.skillType === 'explorer') {
+      if (nextActionNoPenalty) {
+        setNextActionNoPenalty(false);
+        failureEffect = 'No penalties thanks to shielding.';
+        notificationMessage = 'Failure protected - no penalties';
+      } else if (action.skillType === 'explorer') {
         const dataLoss = Math.max(0, Math.floor(Math.random() * 2) + 1 - Math.floor(bonuses.failurePenaltyReduction / 20));
         setData(prev => Math.max(0, prev - dataLoss));
         failureEffect = dataLoss > 0 ? `Lost ${dataLoss} data from equipment malfunction.` : 'Equipment damage prevented by protective systems.';
@@ -528,6 +560,11 @@ const SpaceCardGame = () => {
       }
     }, 100);
     
+    // Decrement scanner effect turns
+    if (scannerRevealTurns > 0) {
+      setScannerRevealTurns(prev => prev - 1);
+    }
+
     // Check if mission should end
     checkMissionEnd(newFuel, newFood);
   };
@@ -672,6 +709,7 @@ const SpaceCardGame = () => {
             setShowStuckPopup={setShowStuckPopup}
             inventory={inventory}
             missionLog={missionLog}
+            scannerRevealTurns={scannerRevealTurns}
             showMissionSummary={showMissionSummary}
             missionSummaryData={missionSummaryData}
             confirmMissionEnd={confirmMissionEnd}
