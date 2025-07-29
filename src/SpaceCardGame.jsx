@@ -7,6 +7,7 @@ import {
   riskLevels,
   getCardPower,
 } from './utils/constants';
+import { achievementDefinitions } from './utils/achievements';
 import Notification from './components/Notification';
 import MenuPhase from './components/MenuPhase';
 import RunPhase from './components/RunPhase';
@@ -78,6 +79,7 @@ const SpaceCardGame = () => {
   const [planetsSettled, setPlanetsSettled] = useState(0);
   const [battlesWon, setBattlesWon] = useState(0);
   const [runNumber, setRunNumber] = useState(1);
+  const [achievements, setAchievements] = useState([]);
   
   // Mission log
   const [missionLog, setMissionLog] = useState([]);
@@ -94,6 +96,55 @@ const SpaceCardGame = () => {
   // Mission end summary popup
   const [showMissionSummary, setShowMissionSummary] = useState(false);
   const [missionSummaryData, setMissionSummaryData] = useState(null);
+
+  // Load saved state on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('stellarSave');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setCredits(data.credits ?? 100);
+        setScrap(data.scrap ?? 0);
+        setEnergy(data.energy ?? 0);
+        setData(data.data ?? 0);
+        setPrestigePoints(data.prestigePoints ?? 0);
+        if (data.skills) setSkills(data.skills);
+        if (data.inventory) setInventory(data.inventory);
+        if (data.equippedCards) setEquippedCards(data.equippedCards);
+        if (data.ship) setShip(data.ship);
+        if (data.missionHistory) setMissionHistory(data.missionHistory);
+        if (data.galaxiesExplored) setGalaxiesExplored(data.galaxiesExplored);
+        if (data.planetsSettled) setPlanetsSettled(data.planetsSettled);
+        if (data.battlesWon) setBattlesWon(data.battlesWon);
+        if (data.runNumber) setRunNumber(data.runNumber);
+        if (data.achievements) setAchievements(data.achievements);
+      } catch (err) {
+        console.error('Failed to load save', err);
+      }
+    }
+  }, []);
+
+  // Save state whenever important values change
+  useEffect(() => {
+    const state = {
+      credits,
+      scrap,
+      energy,
+      data,
+      prestigePoints,
+      skills,
+      inventory,
+      equippedCards,
+      ship,
+      missionHistory,
+      galaxiesExplored,
+      planetsSettled,
+      battlesWon,
+      runNumber,
+      achievements,
+    };
+    localStorage.setItem('stellarSave', JSON.stringify(state));
+  }, [credits, scrap, energy, data, prestigePoints, skills, inventory, equippedCards, ship, missionHistory, galaxiesExplored, planetsSettled, battlesWon, runNumber, achievements]);
   
   // Auto-scroll mission log
   useEffect(() => {
@@ -112,6 +163,14 @@ const SpaceCardGame = () => {
   const showNotification = (title, message, type = 'info') => {
     setNotification({ title, message, type });
     setTimeout(() => setNotification(null), 4000); // Auto-hide after 4 seconds
+  };
+
+  const unlockAchievement = (id) => {
+    if (achievements.includes(id)) return;
+    const def = achievementDefinitions.find(a => a.id === id);
+    if (!def) return;
+    setAchievements(prev => [...prev, id]);
+    showNotification('🏆 Achievement Unlocked!', def.name, 'success');
   };
 
   // Navigate to inventory with context
@@ -173,6 +232,21 @@ const SpaceCardGame = () => {
     
     return bonuses;
   };
+
+  // Check and unlock achievements when relevant values change
+  useEffect(() => {
+    const state = {
+      credits,
+      battlesWon,
+      galaxiesExplored,
+      planetsSettled,
+    };
+    achievementDefinitions.forEach(def => {
+      if (def.condition(state)) {
+        unlockAchievement(def.id);
+      }
+    });
+  }, [credits, battlesWon, galaxiesExplored, planetsSettled]);
 
   // Generate random card
   const generateCard = () => {
@@ -688,6 +762,8 @@ const SpaceCardGame = () => {
             battlesWon={battlesWon}
             prestigePoints={prestigePoints}
             prestige={prestige}
+            achievements={achievements}
+            achievementDefinitions={achievementDefinitions}
           />
         )}
 
