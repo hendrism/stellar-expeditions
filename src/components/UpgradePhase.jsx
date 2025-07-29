@@ -33,6 +33,8 @@ const UpgradePhase = ({ skills, prestigePoints, upgradeSkill, ship, scrap, energ
             {(ship.level + 1) % 4 === 0 && ' +1 engine slot'}
             {(ship.level + 1) % 3 === 1 && ' +1 habitat slot'}
             {(ship.level + 1) % 5 === 0 && ' +1 shield slot'}
+            {(ship.level + 1) % 4 === 1 && ' +1 drone slot'}
+            {(ship.level + 1) % 4 === 2 && ' +1 medkit slot'}
           </div>
           <div className="text-sm text-gray-400">Cost: {ship.level * 20} Scrap, {ship.level * 10} Energy</div>
           <button onClick={upgradeShip} disabled={scrap < ship.level * 20 || energy < ship.level * 10} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded">

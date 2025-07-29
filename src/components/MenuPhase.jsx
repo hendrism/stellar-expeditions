@@ -55,6 +55,8 @@ const MenuPhase = ({
             ⚡{Object.values(equippedCards.engine).length}/{ship.equipmentSlots.engine}
             🏠{Object.values(equippedCards.habitat).length}/{ship.equipmentSlots.habitat}
             🛡️{Object.values(equippedCards.shield).length}/{ship.equipmentSlots.shield}
+            🤖{Object.values(equippedCards.drone).length}/{ship.equipmentSlots.drone}
+            🩺{Object.values(equippedCards.medkit).length}/{ship.equipmentSlots.medkit}
           </div>
           <div className="text-sm text-gray-400">Next mission: {20 + ship.level * 3} fuel, {15 + ship.level * 2} food</div>
         </div>

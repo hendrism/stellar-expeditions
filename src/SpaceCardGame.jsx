@@ -7,6 +7,7 @@ import {
   riskLevels,
   getCardPower,
 } from './utils/constants';
+import { randomEvents } from './utils/events';
 import { achievementDefinitions } from './utils/achievements';
 import Notification from './components/Notification';
 import MenuPhase from './components/MenuPhase';
@@ -52,13 +53,16 @@ const SpaceCardGame = () => {
     scanner: [],
     engine: [],
     habitat: [],
-    shield: []
+    shield: [],
+    drone: [],
+    medkit: []
   });
 
   // Temporary effects from consuming items
   const [nextFighterAutoSuccess, setNextFighterAutoSuccess] = useState(false);
   const [nextActionNoPenalty, setNextActionNoPenalty] = useState(false);
   const [scannerRevealTurns, setScannerRevealTurns] = useState(0);
+  const [bonusSuccessTurns, setBonusSuccessTurns] = useState(0);
   const [ship, setShip] = useState({
     name: 'Rookie Cruiser',
     fuelEfficiency: 1,
@@ -70,7 +74,9 @@ const SpaceCardGame = () => {
       scanner: 1,
       engine: 1,
       habitat: 1,
-      shield: 1
+      shield: 1,
+      drone: 1,
+      medkit: 1
     }
   });
   
@@ -225,10 +231,28 @@ const SpaceCardGame = () => {
         case 'shield':
           bonuses.failurePenaltyReduction += card.equipPower;
           break;
+        case 'drone':
+          bonuses.successBonus.explorer += Math.floor(card.equipPower / 2);
+          bonuses.successBonus.fighter += Math.floor(card.equipPower / 2);
+          break;
+        case 'medkit':
+          bonuses.failurePenaltyReduction += card.equipPower * 2;
+          break;
         default:
           break;
       }
     });
+
+    // Synergy bonuses
+    if (equippedCards.drone.length > 0 && equippedCards.engine.length > 0) {
+      const synergy = Math.min(equippedCards.drone.length, equippedCards.engine.length) * 2;
+      bonuses.successBonus.explorer += synergy;
+      bonuses.successBonus.fighter += synergy;
+    }
+    if (equippedCards.medkit.length > 0 && equippedCards.shield.length > 0) {
+      const synergy = Math.min(equippedCards.medkit.length, equippedCards.shield.length) * 5;
+      bonuses.failurePenaltyReduction += synergy;
+    }
     
     return bonuses;
   };
@@ -295,6 +319,7 @@ const SpaceCardGame = () => {
       
       // Calculate costs and rewards based on skill level and risk
       const skillLevel = skills[skillType];
+      const perkMultiplier = skillLevel >= 5 ? 1.2 : skillLevel >= 3 ? 1.1 : 1;
       const baseCosts = {
         explorer: { fuel: 3, food: 1, scrap: 0 },
         fighter: { fuel: 2, food: 3, scrap: 0 },
@@ -308,14 +333,14 @@ const SpaceCardGame = () => {
       };
       
       // Adjust costs based on ship, skills, and equipment
-      let fuelCost = Math.max(1, Math.ceil(baseCosts[skillType].fuel * risk.multiplier) - (ship.fuelEfficiency - 1) - bonuses.fuelCostReduction);
+      let fuelCost = Math.max(1, Math.ceil(baseCosts[skillType].fuel * risk.multiplier) - (ship.fuelEfficiency - 1) - bonuses.fuelCostReduction - Math.floor((skillLevel - 1) / 4));
       let foodCost = Math.max(1, Math.ceil(baseCosts[skillType].food * risk.multiplier) - Math.floor(skillLevel / 3) - bonuses.foodCostReduction[skillType]);
       let scrapCost = Math.max(0, Math.ceil(baseCosts[skillType].scrap * risk.multiplier) - Math.floor(skillLevel / 2));
       
       // Calculate potential rewards with equipment bonuses
-      let creditsReward = Math.floor(baseRewards[skillType].credits * risk.multiplier * skillLevel * (1 + bonuses.rewardBonus[skillType] / 100));
-      let dataReward = Math.floor(baseRewards[skillType].data * risk.multiplier * skillLevel);
-      let scrapReward = Math.floor(baseRewards[skillType].scrap * risk.multiplier * skillLevel);
+      let creditsReward = Math.floor(baseRewards[skillType].credits * risk.multiplier * skillLevel * perkMultiplier * (1 + bonuses.rewardBonus[skillType] / 100));
+      let dataReward = Math.floor(baseRewards[skillType].data * risk.multiplier * skillLevel * perkMultiplier);
+      let scrapReward = Math.floor(baseRewards[skillType].scrap * risk.multiplier * skillLevel * perkMultiplier);
       
       // Adjust success chance with equipment bonuses
       let successChance = risk.successChance + (bonuses.successBonus[skillType] / 100);
@@ -440,6 +465,18 @@ const SpaceCardGame = () => {
         addToLog(`🛡️ Used ${card.name} - next action failure won't cause penalties!`);
         showNotification('🛡️ Shield Activated', `${card.name}\nNext failure protected!`, 'success');
         break;
+      case 'drone':
+        setBonusSuccessTurns(card.consumePower);
+        addToLog(`🤖 Used ${card.name} - success chances boosted!`);
+        showNotification('🤖 Drone Deployed', `${card.name}\nTemporary success boost`, 'success');
+        break;
+      case 'medkit':
+        const restore = card.consumePower * 2;
+        setFuel(prev => Math.min(maxFuel, prev + restore));
+        setFood(prev => Math.min(maxFood, prev + restore));
+        addToLog(`🩺 Used ${card.name} - restored ${restore} fuel and food!`);
+        showNotification('🩺 Supplies Restored', `${card.name}\n+${restore} fuel & food`, 'success');
+        break;
       default:
         break;
     }
@@ -468,6 +505,7 @@ const SpaceCardGame = () => {
     setNextFighterAutoSuccess(false);
     setNextActionNoPenalty(false);
     setScannerRevealTurns(0);
+    setBonusSuccessTurns(0);
     setTurn(0);
     setMissionLog([`Mission ${runNumber} begins! Ship fueled and provisioned.`]);
     setCurrentActions(generateTurnActions());
@@ -532,13 +570,41 @@ const SpaceCardGame = () => {
   };
 
   // Check if mission should end
-  const checkMissionEnd = (newFuel, newFood) => {
-    if (newFuel <= 0 || newFood <= 0) {
-      addToLog("Mission critical! Out of essential supplies. Returning to base.");
-      setTimeout(endRun, 1500);
-      return true;
+const checkMissionEnd = (newFuel, newFood) => {
+  if (newFuel <= 0 || newFood <= 0) {
+    addToLog("Mission critical! Out of essential supplies. Returning to base.");
+    setTimeout(endRun, 1500);
+    return true;
+  }
+  return false;
+};
+
+  const triggerRandomEvent = () => {
+    if (Math.random() < 0.25) {
+      const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+      const amount = event.amount;
+      const absAmount = Math.abs(amount);
+      const gain = amount > 0;
+      const text = `${event.text}${gain ? ` +${absAmount}` : ` -${absAmount}`} ${event.resource}`;
+      switch (event.resource) {
+        case 'fuel':
+          setFuel(prev => gain ? Math.min(maxFuel, prev + absAmount) : Math.max(0, prev - absAmount));
+          break;
+        case 'food':
+          setFood(prev => gain ? Math.min(maxFood, prev + absAmount) : Math.max(0, prev - absAmount));
+          break;
+        case 'scrap':
+          setScrap(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
+          break;
+        case 'data':
+          setData(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
+          break;
+        default:
+          break;
+      }
+      addToLog(`🌠 ${text}`);
+      showNotification('Random Event', text, gain ? 'success' : 'error');
     }
-    return false;
   };
 
   // Take action
@@ -557,12 +623,16 @@ const SpaceCardGame = () => {
     setTurn(prev => prev + 1);
     
     // Determine success considering temporary bonuses
+    let effectiveChance = action.successChance;
+    if (bonusSuccessTurns > 0) {
+      effectiveChance += 0.1;
+    }
     let success;
     if (nextFighterAutoSuccess && action.skillType === 'fighter') {
       success = true;
       setNextFighterAutoSuccess(false);
     } else {
-      success = Math.random() < action.successChance;
+      success = Math.random() < effectiveChance;
     }
     const bonuses = getEquipmentBonuses();
     
@@ -628,15 +698,19 @@ const SpaceCardGame = () => {
     // Generate new actions for next turn
     setTimeout(() => {
       if (newFuel > 0 && newFood > 0) {
+        triggerRandomEvent();
         const newActions = generateTurnActions();
         setCurrentActions(newActions);
         checkActionsAffordable(newActions);
       }
     }, 100);
     
-    // Decrement scanner effect turns
+    // Decrement temporary effect turns
     if (scannerRevealTurns > 0) {
       setScannerRevealTurns(prev => prev - 1);
+    }
+    if (bonusSuccessTurns > 0) {
+      setBonusSuccessTurns(prev => prev - 1);
     }
 
     // Check if mission should end
@@ -668,7 +742,9 @@ const SpaceCardGame = () => {
           scanner: prev.equipmentSlots.scanner + (prev.level % 3 === 0 ? 1 : 0),
           engine: prev.equipmentSlots.engine + (prev.level % 4 === 0 ? 1 : 0),
           habitat: prev.equipmentSlots.habitat + (prev.level % 3 === 1 ? 1 : 0),
-          shield: prev.equipmentSlots.shield + (prev.level % 5 === 0 ? 1 : 0)
+          shield: prev.equipmentSlots.shield + (prev.level % 5 === 0 ? 1 : 0),
+          drone: prev.equipmentSlots.drone + (prev.level % 4 === 1 ? 1 : 0),
+          medkit: prev.equipmentSlots.medkit + (prev.level % 4 === 2 ? 1 : 0)
         },
         name: prev.level === 1 ? 'Advanced Cruiser' : prev.level === 2 ? 'Battle Destroyer' : 'Legendary Dreadnought'
       }));
@@ -688,8 +764,14 @@ const SpaceCardGame = () => {
         scanner: [],
         engine: [],
         habitat: [],
-        shield: []
+        shield: [],
+        drone: [],
+        medkit: []
       });
+      setNextFighterAutoSuccess(false);
+      setNextActionNoPenalty(false);
+      setScannerRevealTurns(0);
+      setBonusSuccessTurns(0);
       setShip({
         name: 'Rookie Cruiser',
         fuelEfficiency: 1,
@@ -701,7 +783,9 @@ const SpaceCardGame = () => {
           scanner: 1,
           engine: 1,
           habitat: 1,
-          shield: 1
+          shield: 1,
+          drone: 1,
+          medkit: 1
         }
       });
       setGalaxiesExplored(1);
