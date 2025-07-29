@@ -41,6 +41,20 @@ export const cardTypes = {
     category: 'all',
     equipEffect: 'Reduces penalties from failed actions',
     consumeEffect: 'Prevents failure penalty on next action'
+  },
+  drone: {
+    name: 'Drone',
+    icon: require('lucide-react').Bot,
+    category: 'all',
+    equipEffect: 'Boosts action success with engine synergy',
+    consumeEffect: 'Temporarily increases success chance'
+  },
+  medkit: {
+    name: 'Medkit',
+    icon: require('lucide-react').BriefcaseMedical,
+    category: 'all',
+    equipEffect: 'Further reduces failure penalties',
+    consumeEffect: 'Restores fuel and food supplies'
   }
 };
 
