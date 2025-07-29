@@ -15,7 +15,9 @@ const MenuPhase = ({
   planetsSettled,
   battlesWon,
   prestigePoints,
-  prestige
+  prestige,
+  achievements,
+  achievementDefinitions
 }) => (
   <div className="space-y-6">
     <div className="bg-gray-800 rounded-lg p-6">
@@ -84,6 +86,20 @@ const MenuPhase = ({
           <div className="text-sm text-gray-400">Battles Won</div>
         </div>
       </div>
+    </div>
+
+    <div className="bg-gray-800 rounded-lg p-6">
+      <h3 className="text-xl mb-3">Achievements</h3>
+      {achievements.length === 0 ? (
+        <div className="text-center text-gray-400">No achievements yet.</div>
+      ) : (
+        <ul className="list-disc pl-5 space-y-1 text-sm">
+          {achievements.map(id => {
+            const def = achievementDefinitions.find(a => a.id === id);
+            return <li key={id}>{def ? def.name : id}</li>;
+          })}
+        </ul>
+      )}
     </div>
 
     {prestigePoints >= 50 && (
