@@ -25,6 +25,7 @@ const SpaceCardGame = () => {
   
   // Notification system
   const [notification, setNotification] = useState(null);
+  const [notificationQueue, setNotificationQueue] = useState([]);
   
   // Mission resources (reset each run)
   const [fuel, setFuel] = useState(20);
@@ -165,11 +166,21 @@ const SpaceCardGame = () => {
     setMissionLog(prev => [...prev.slice(-4), `Turn ${turn + 1}: ${message}`]);
   };
 
-  // Show notification
+  // Show notification (queued)
   const showNotification = (title, message, type = 'info') => {
-    setNotification({ title, message, type });
-    setTimeout(() => setNotification(null), 4000); // Auto-hide after 4 seconds
+    setNotificationQueue(prev => [...prev, { title, message, type }]);
   };
+
+  // Display queued notifications sequentially
+  useEffect(() => {
+    if (!notification && notificationQueue.length > 0) {
+      const next = notificationQueue[0];
+      setNotification(next);
+      setNotificationQueue(prev => prev.slice(1));
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification, notificationQueue]);
 
   const unlockAchievement = (id) => {
     if (achievements.includes(id)) return;
@@ -573,6 +584,7 @@ const SpaceCardGame = () => {
 const checkMissionEnd = (newFuel, newFood) => {
   if (newFuel <= 0 || newFood <= 0) {
     addToLog("Mission critical! Out of essential supplies. Returning to base.");
+    showNotification('🚨 Supplies Depleted', 'Mission ending due to lack of supplies.', 'error');
     setTimeout(endRun, 1500);
     return true;
   }
