@@ -170,14 +170,14 @@ const SpaceCardGame = () => {
   };
 
   // Show notification (queued and added to feed)
-  const showNotification = (title, message, type = 'info') => {
+  const showNotification = (title, message, type = 'info', icon = null, actions = []) => {
     // Add to feed with grouping
     setNotificationFeed(prev => {
       if (prev.length > 0 && prev[0].title === title && prev[0].message === message && prev[0].type === type) {
         const updated = { ...prev[0], count: (prev[0].count || 1) + 1 };
         return [updated, ...prev.slice(1)];
       }
-      return [{ title, message, type, count: 1 }, ...prev];
+      return [{ title, message, type, count: 1, icon, actions }, ...prev];
     });
 
     // Queue popup, grouping consecutive duplicates
@@ -187,7 +187,7 @@ const SpaceCardGame = () => {
         last.count = (last.count || 1) + 1;
         return [...prev];
       }
-      return [...prev, { title, message, type, count: 1 }];
+      return [...prev, { title, message, type, count: 1, icon, actions }];
     });
   };
 
