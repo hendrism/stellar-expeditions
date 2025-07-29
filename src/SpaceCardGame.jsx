@@ -10,7 +10,6 @@ import {
 import { randomEvents } from './utils/events';
 import { achievementDefinitions } from './utils/achievements';
 import Notification from './components/Notification';
-import NotificationFeed from './components/NotificationFeed';
 import MenuPhase from './components/MenuPhase';
 import RunPhase from './components/RunPhase';
 import HistoryPhase from './components/HistoryPhase';
@@ -27,8 +26,6 @@ const SpaceCardGame = () => {
   // Notification system
   const [notification, setNotification] = useState(null);
   const [notificationQueue, setNotificationQueue] = useState([]);
-  const [notificationFeed, setNotificationFeed] = useState([]);
-  const [feedOpen, setFeedOpen] = useState(false);
   
   // Mission resources (reset each run)
   const [fuel, setFuel] = useState(20);
@@ -171,15 +168,6 @@ const SpaceCardGame = () => {
 
   // Show notification (queued and added to feed)
   const showNotification = (title, message, type = 'info', icon = null, actions = []) => {
-    // Add to feed with grouping
-    setNotificationFeed(prev => {
-      if (prev.length > 0 && prev[0].title === title && prev[0].message === message && prev[0].type === type) {
-        const updated = { ...prev[0], count: (prev[0].count || 1) + 1 };
-        return [updated, ...prev.slice(1)];
-      }
-      return [{ title, message, type, count: 1, icon, actions }, ...prev];
-    });
-
     // Queue popup, grouping consecutive duplicates
     setNotificationQueue(prev => {
       const last = prev[prev.length - 1];
@@ -834,12 +822,6 @@ const checkMissionEnd = (newFuel, newFood) => {
         <Notification
           notification={notification}
           onClose={() => setNotification(null)}
-        />
-        <NotificationFeed
-          feed={notificationFeed}
-          open={feedOpen}
-          toggleOpen={() => setFeedOpen(prev => !prev)}
-          clearFeed={() => setNotificationFeed([])}
         />
 
         <header className="text-center mb-6">
