@@ -93,12 +93,16 @@ const SpaceCardGame = () => {
   
   // Mission history
   const [missionHistory, setMissionHistory] = useState([]);
-  
+
   // Current turn actions
   const [currentActions, setCurrentActions] = useState([]);
-  
-  // Show stuck popup when no actions are affordable
-  const [showStuckPopup, setShowStuckPopup] = useState(false);
+
+  // Stuck popup mode: null, 'haveItems', or 'noItems'
+  const [stuckPopup, setStuckPopup] = useState(null);
+
+  // Track mission performance
+  const [successfulActions, setSuccessfulActions] = useState(0);
+  const [failedActions, setFailedActions] = useState(0);
   
   // Mission end summary popup
   const [showMissionSummary, setShowMissionSummary] = useState(false);
@@ -211,14 +215,20 @@ const SpaceCardGame = () => {
 
   // Check if any actions are affordable
   const checkActionsAffordable = (actions) => {
-    const anyAffordable = actions.some(action => 
+    const anyAffordable = actions.some(action =>
       fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap
     );
-    
-    if (!anyAffordable && actions.length > 0) {
-      setShowStuckPopup(true);
+
+    const hasSupplyCards = inventory.some(
+      c => !c.isEquipped && ['engine', 'habitat', 'medkit'].includes(c.type)
+    );
+
+    if ((fuel <= 0 || food <= 0 || !anyAffordable) && actions.length > 0) {
+      setStuckPopup(hasSupplyCards ? 'haveItems' : 'noItems');
+    } else {
+      setStuckPopup(null);
     }
-    
+
     return anyAffordable;
   };
 
@@ -525,6 +535,8 @@ const SpaceCardGame = () => {
     setNextActionNoPenalty(false);
     setScannerRevealTurns(0);
     setBonusSuccessTurns(0);
+    setSuccessfulActions(0);
+    setFailedActions(0);
     setTurn(0);
     setMissionLog([`Mission ${runNumber} begins! Ship fueled and provisioned.`]);
     setCurrentActions(generateTurnActions());
@@ -541,10 +553,19 @@ const SpaceCardGame = () => {
     const baseEnergy = Math.floor(turn / 4) + 1;
     const baseData = Math.floor(turn / 5) + 1;
     
+    let status;
+    if (fuel <= 0 || food <= 0) {
+      status = failedActions > 0 || successfulActions === 0 ? 'Failure' : 'Partial Success';
+    } else if (failedActions === 0) {
+      status = 'Success';
+    } else {
+      status = 'Partial Success';
+    }
+
     const summaryData = {
       runNumber,
       turns: turn,
-      status: fuel <= 0 || food <= 0 ? 'Resources Depleted' : 'Mission Complete',
+      status,
       gains: {
         prestige: basePrestige + efficiencyBonus,
         scrap: baseScrap,
@@ -555,7 +576,7 @@ const SpaceCardGame = () => {
     
     setMissionSummaryData(summaryData);
     setShowMissionSummary(true);
-    setShowStuckPopup(false);
+    setStuckPopup(null);
   };
   
   // Confirm mission end and apply rewards
@@ -591,9 +612,14 @@ const SpaceCardGame = () => {
   // Check if mission should end
 const checkMissionEnd = (newFuel, newFood) => {
   if (newFuel <= 0 || newFood <= 0) {
-    addToLog("Mission critical! Out of essential supplies. Returning to base.");
-    showNotification('🚨 Supplies Depleted', 'Mission ending due to lack of supplies.', 'error');
-    setTimeout(endRun, 1500);
+    const hasSupplyCards = inventory.some(
+      c => !c.isEquipped && ['engine', 'habitat', 'medkit'].includes(c.type)
+    );
+    setStuckPopup(hasSupplyCards ? 'haveItems' : 'noItems');
+    if (!hasSupplyCards) {
+      addToLog('Mission critical! Out of essential supplies.');
+      showNotification('🚨 Supplies Depleted', 'No resources remaining.', 'error');
+    }
     return true;
   }
   return false;
@@ -675,6 +701,7 @@ const checkMissionEnd = (newFuel, newFood) => {
       setCredits(prev => prev + action.rewards.credits);
       setData(prev => prev + action.rewards.data);
       setScrap(prev => prev + action.rewards.scrap);
+      setSuccessfulActions(prev => prev + 1);
       
       // Check for special achievements
       let achievementText = '';
@@ -702,6 +729,7 @@ const checkMissionEnd = (newFuel, newFood) => {
       
     } else {
       // Handle failure with optional shield protection
+      setFailedActions(prev => prev + 1);
       let failureEffect = '';
       let notificationMessage = '';
       if (nextActionNoPenalty) {
@@ -899,8 +927,8 @@ const checkMissionEnd = (newFuel, newFood) => {
             riskLevels={riskLevels}
             takeAction={takeAction}
             scrap={scrap}
-            showStuckPopup={showStuckPopup}
-            setShowStuckPopup={setShowStuckPopup}
+            stuckPopup={stuckPopup}
+            setStuckPopup={setStuckPopup}
             inventory={inventory}
             missionLog={missionLog}
             scannerRevealTurns={scannerRevealTurns}

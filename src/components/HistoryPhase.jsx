@@ -17,14 +17,30 @@ const HistoryPhase = ({ missionHistory, setGamePhase }) => (
           {missionHistory.map(mission => (
             <div
               key={mission.id}
-              className={`p-4 rounded-lg border-2 ${mission.status === 'Mission Complete' ? 'bg-green-900 border-green-600' : 'bg-red-900 border-red-600'}`}
+              className={`p-4 rounded-lg border-2 ${
+                mission.status === 'Success'
+                  ? 'bg-green-900 border-green-600'
+                  : mission.status === 'Partial Success'
+                  ? 'bg-yellow-900 border-yellow-600'
+                  : 'bg-red-900 border-red-600'
+              }`}
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h4 className="font-bold text-lg">Mission #{mission.id}</h4>
                   <p className="text-sm text-gray-400">{mission.date}</p>
                 </div>
-                <div className={`px-2 py-1 rounded text-sm ${mission.status === 'Mission Complete' ? 'bg-green-700 text-green-200' : 'bg-red-700 text-red-200'}`}>{mission.status}</div>
+                <div
+                  className={`px-2 py-1 rounded text-sm ${
+                    mission.status === 'Success'
+                      ? 'bg-green-700 text-green-200'
+                      : mission.status === 'Partial Success'
+                      ? 'bg-yellow-700 text-yellow-200'
+                      : 'bg-red-700 text-red-200'
+                  }`}
+                >
+                  {mission.status}
+                </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
