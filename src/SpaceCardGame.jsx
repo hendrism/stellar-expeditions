@@ -555,11 +555,13 @@ const SpaceCardGame = () => {
     
     let status;
     if (fuel <= 0 || food <= 0) {
-      status = failedActions > 0 || successfulActions === 0 ? 'Failure' : 'Partial Success';
-    } else if (failedActions === 0) {
+      status = successfulActions > failedActions ? 'Partial Success' : 'Failure';
+    } else if (successfulActions >= failedActions && successfulActions > 0) {
       status = 'Success';
-    } else {
+    } else if (successfulActions > 0) {
       status = 'Partial Success';
+    } else {
+      status = 'Failure';
     }
 
     const summaryData = {

@@ -69,6 +69,12 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
 
+## Mission Outcome
+
+At the end of each run, the game evaluates your performance based on how many actions succeeded versus failed and whether you ran out of supplies. Running out of fuel or food will never result in a full success, but you can still earn a partial success if you completed more successful actions than failures.
+
+If you finish with fuel and food remaining and your successful actions are at least equal to your failures, the mission is considered a **Success**. Any other result with at least one successful action becomes a **Partial Success**. Only runs with no successes or with more failures than successes after depleting supplies are labeled **Failure**.
+
 ## Notification System
 
 Notifications now appear as a centered modal with optional icons and action buttons. They automatically dismiss after 4&nbsp;seconds and can also be closed manually.
