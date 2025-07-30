@@ -97,8 +97,13 @@ const SpaceCardGame = () => {
   // Current turn actions
   const [currentActions, setCurrentActions] = useState([]);
 
-  // Stuck popup mode: null, 'haveItems', or 'noItems'
-  const [stuckPopup, setStuckPopup] = useState(null);
+  // Mission metrics
+  const [randomEventCount, setRandomEventCount] = useState(0);
+  const [actionTypeCounts, setActionTypeCounts] = useState({
+    explorer: 0,
+    fighter: 0,
+    settler: 0,
+  });
 
   // Track mission performance
   const [successfulActions, setSuccessfulActions] = useState(0);
@@ -219,14 +224,8 @@ const SpaceCardGame = () => {
       fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap
     );
 
-    const hasSupplyCards = inventory.some(
-      c => !c.isEquipped && ['engine', 'habitat', 'medkit'].includes(c.type)
-    );
-
-    if ((fuel <= 0 || food <= 0 || !anyAffordable) && actions.length > 0) {
-      setStuckPopup(hasSupplyCards ? 'haveItems' : 'noItems');
-    } else {
-      setStuckPopup(null);
+    if (!anyAffordable && actions.length > 0) {
+      showNotification('No Actions Available', 'You lack the resources for these actions.', 'error');
     }
 
     return anyAffordable;
@@ -535,6 +534,8 @@ const SpaceCardGame = () => {
     setNextActionNoPenalty(false);
     setScannerRevealTurns(0);
     setBonusSuccessTurns(0);
+    setRandomEventCount(0);
+    setActionTypeCounts({ explorer: 0, fighter: 0, settler: 0 });
     setSuccessfulActions(0);
     setFailedActions(0);
     setTurn(0);
@@ -554,9 +555,7 @@ const SpaceCardGame = () => {
     const baseData = Math.floor(turn / 5) + 1;
     
     let status;
-    if (fuel <= 0 || food <= 0) {
-      status = successfulActions > failedActions ? 'Partial Success' : 'Failure';
-    } else if (successfulActions >= failedActions && successfulActions > 0) {
+    if (successfulActions >= failedActions && successfulActions > 0) {
       status = 'Success';
     } else if (successfulActions > 0) {
       status = 'Partial Success';
@@ -568,6 +567,10 @@ const SpaceCardGame = () => {
       runNumber,
       turns: turn,
       status,
+      successes: successfulActions,
+      failures: failedActions,
+      randomEvents: randomEventCount,
+      actionTotals: actionTypeCounts,
       gains: {
         prestige: basePrestige + efficiencyBonus,
         scrap: baseScrap,
@@ -578,7 +581,6 @@ const SpaceCardGame = () => {
     
     setMissionSummaryData(summaryData);
     setShowMissionSummary(true);
-    setStuckPopup(null);
   };
   
   // Confirm mission end and apply rewards
@@ -614,22 +616,15 @@ const SpaceCardGame = () => {
   // Check if mission should end
 const checkMissionEnd = (newFuel, newFood) => {
   if (newFuel <= 0 || newFood <= 0) {
-    const hasSupplyCards = inventory.some(
-      c => !c.isEquipped && ['engine', 'habitat', 'medkit'].includes(c.type)
-    );
-    setStuckPopup(hasSupplyCards ? 'haveItems' : 'noItems');
-    if (!hasSupplyCards) {
-      addToLog('Mission critical! Out of essential supplies.');
-      showNotification('🚨 Supplies Depleted', 'No resources remaining.', 'error');
-    }
-    return true;
+    addToLog('🚨 Supplies depleted. You cannot perform further actions.');
+    showNotification('Supplies Depleted', 'Fuel or food exhausted. End the mission when ready.', 'error');
   }
-  return false;
 };
 
   const triggerRandomEvent = () => {
     if (Math.random() < 0.25) {
       const event = pickRandomEvent();
+      setRandomEventCount(prev => prev + 1);
       const effects = event.effects || { [event.resource]: event.amount };
       const textParts = [];
 
@@ -675,7 +670,7 @@ const checkMissionEnd = (newFuel, newFood) => {
     if (fuel < action.costs.fuel || food < action.costs.food || scrap < action.costs.scrap) {
       return;
     }
-    
+
     // Deduct costs
     const newFuel = fuel - action.costs.fuel;
     const newFood = food - action.costs.food;
@@ -683,6 +678,10 @@ const checkMissionEnd = (newFuel, newFood) => {
     setFood(newFood);
     setScrap(prev => prev - action.costs.scrap);
     setTurn(prev => prev + 1);
+    setActionTypeCounts(prev => ({
+      ...prev,
+      [action.skillType]: prev[action.skillType] + 1,
+    }));
     
     // Determine success considering temporary bonuses
     let effectiveChance = action.successChance;
@@ -929,9 +928,6 @@ const checkMissionEnd = (newFuel, newFood) => {
             riskLevels={riskLevels}
             takeAction={takeAction}
             scrap={scrap}
-            stuckPopup={stuckPopup}
-            setStuckPopup={setStuckPopup}
-            inventory={inventory}
             missionLog={missionLog}
             scannerRevealTurns={scannerRevealTurns}
             showMissionSummary={showMissionSummary}
