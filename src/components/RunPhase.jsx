@@ -109,7 +109,7 @@ const RunPhase = ({
 
     {showMissionSummary && missionSummaryData && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className={`rounded-lg p-6 max-w-md mx-4 border-2 ${missionSummaryData.status === 'Success' ? 'bg-green-900 border-green-600' : missionSummaryData.status === 'Partial Success' ? 'bg-yellow-900 border-yellow-600' : 'bg-red-900 border-red-600'}`}>\
+        <div className={`rounded-lg p-6 max-w-md mx-4 border-2 ${missionSummaryData.status === 'Success' ? 'bg-green-900 border-green-600' : missionSummaryData.status === 'Partial Success' ? 'bg-yellow-900 border-yellow-600' : 'bg-red-900 border-red-600'}`}>
           <h3 className="text-2xl font-bold mb-4 text-center">
             {missionSummaryData.status === 'Success' ? '🎉 Mission Success!' : missionSummaryData.status === 'Partial Success' ? '⚠️ Partial Success' : '💥 Mission Failed'}
           </h3>
