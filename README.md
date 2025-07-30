@@ -72,3 +72,8 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ## Notification System
 
 Notifications now appear as a centered modal with optional icons and action buttons. They automatically dismiss after 4&nbsp;seconds and can also be closed manually.
+
+## Progressive Web App
+
+A service worker is included at `src/service-worker.js` and registered via `src/serviceWorkerRegistration.js`. Production builds will cache assets for offline use. Learn more at [Create React App PWA docs](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app).
+
