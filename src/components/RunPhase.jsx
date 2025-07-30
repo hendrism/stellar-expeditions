@@ -14,9 +14,6 @@ const RunPhase = ({
   riskLevels,
   takeAction,
   scrap,
-  stuckPopup,
-  setStuckPopup,
-  inventory,
   missionLog,
   scannerRevealTurns,
   showMissionSummary,
@@ -98,33 +95,6 @@ const RunPhase = ({
       {currentActions.length === 0 && <div className="text-center text-gray-400 py-8">Generating new opportunities...</div>}
     </div>
 
-    {stuckPopup && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className={`bg-gray-800 border-2 rounded-lg p-6 max-w-md mx-4 ${stuckPopup === 'haveItems' ? 'border-yellow-600' : 'border-red-600'}`}> 
-          <h3 className="text-xl font-bold mb-4 text-yellow-400">⚠️ No Actions Available</h3>
-          <p className="text-gray-300 mb-6">
-            {stuckPopup === 'haveItems'
-              ? "You don't have enough resources to take any actions, but you have cards that might help."
-              : "You have no resources or cards left to continue."}
-          </p>
-          <div className="flex gap-3">
-            {stuckPopup === 'haveItems' && (
-              <button
-                onClick={() => {
-                  setStuckPopup(null);
-                  goToInventory('run');
-                }}
-                className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg transition-colors"
-              >
-                Check Cards ({inventory.filter(c => !c.isEquipped).length})
-              </button>
-            )}
-            <button onClick={endRun} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">End Mission</button>
-            <button onClick={() => setStuckPopup(null)} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
-          </div>
-        </div>
-      </div>
-    )}
 
     <div className="bg-gray-800 rounded-lg p-4">
       <h3 className="text-lg mb-2">Mission Log</h3>
@@ -147,6 +117,35 @@ const RunPhase = ({
             <div className="text-center">
               <div className="text-lg font-bold">Mission #{missionSummaryData.runNumber}</div>
               <div className="text-gray-300">Completed in {missionSummaryData.turns} turns</div>
+            </div>
+            <div className="bg-gray-800 rounded p-4 mb-3">
+              <h4 className="font-bold mb-2">Mission Stats:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span>Successes:</span>
+                  <span className="float-right font-bold">{missionSummaryData.successes}</span>
+                </div>
+                <div>
+                  <span>Failures:</span>
+                  <span className="float-right font-bold">{missionSummaryData.failures}</span>
+                </div>
+                <div>
+                  <span>Random Events:</span>
+                  <span className="float-right font-bold">{missionSummaryData.randomEvents}</span>
+                </div>
+              </div>
+              <div className="mt-2 space-y-1 text-sm">
+                {Object.entries(missionSummaryData.actionTotals).map(([type, count]) => {
+                  const total = missionSummaryData.successes + missionSummaryData.failures;
+                  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                  return (
+                    <div key={type} className="flex justify-between">
+                      <span>{type.charAt(0).toUpperCase() + type.slice(1)}:</span>
+                      <span>{count} ({pct}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="bg-gray-800 rounded p-4">
               <h4 className="font-bold mb-2">Rewards Earned:</h4>
