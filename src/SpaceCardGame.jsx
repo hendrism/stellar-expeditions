@@ -7,7 +7,7 @@ import {
   riskLevels,
   getCardPower,
 } from './utils/constants';
-import { randomEvents } from './utils/events';
+import { pickRandomEvent } from './utils/events';
 import { achievementDefinitions } from './utils/achievements';
 import Notification from './components/Notification';
 import MenuPhase from './components/MenuPhase';
@@ -601,29 +601,43 @@ const checkMissionEnd = (newFuel, newFood) => {
 
   const triggerRandomEvent = () => {
     if (Math.random() < 0.25) {
-      const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
-      const amount = event.amount;
-      const absAmount = Math.abs(amount);
-      const gain = amount > 0;
-      const text = `${event.text}${gain ? ` +${absAmount}` : ` -${absAmount}`} ${event.resource}`;
-      switch (event.resource) {
-        case 'fuel':
-          setFuel(prev => gain ? Math.min(maxFuel, prev + absAmount) : Math.max(0, prev - absAmount));
-          break;
-        case 'food':
-          setFood(prev => gain ? Math.min(maxFood, prev + absAmount) : Math.max(0, prev - absAmount));
-          break;
-        case 'scrap':
-          setScrap(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
-          break;
-        case 'data':
-          setData(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
-          break;
-        default:
-          break;
-      }
+      const event = pickRandomEvent();
+      const effects = event.effects || { [event.resource]: event.amount };
+      const textParts = [];
+
+      Object.entries(effects).forEach(([resource, value]) => {
+        const absAmount = Math.abs(value);
+        const gain = value > 0;
+        textParts.push(`${gain ? '+' : '-'}${absAmount} ${resource}`);
+        switch (resource) {
+          case 'fuel':
+            setFuel(prev => gain ? Math.min(maxFuel, prev + absAmount) : Math.max(0, prev - absAmount));
+            break;
+          case 'food':
+            setFood(prev => gain ? Math.min(maxFood, prev + absAmount) : Math.max(0, prev - absAmount));
+            break;
+          case 'scrap':
+            setScrap(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
+            break;
+          case 'data':
+            setData(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
+            break;
+          case 'energy':
+            setEnergy(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
+            break;
+          case 'credits':
+            setCredits(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
+            break;
+          default:
+            break;
+        }
+      });
+
+      const text = `${event.text} ${textParts.join(', ')}`;
+      // Use success color when overall net gain is positive
+      const totalChange = Object.values(effects).reduce((a, b) => a + b, 0);
       addToLog(`🌠 ${text}`);
-      showNotification('Random Event', text, gain ? 'success' : 'error');
+      showNotification('Random Event', text, totalChange >= 0 ? 'success' : 'error');
     }
   };
 
