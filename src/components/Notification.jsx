@@ -24,12 +24,6 @@ const Notification = ({ notification, onClose }) => {
       <div
         className={`relative p-6 rounded-lg shadow-lg border-2 max-w-md w-full mx-4 ${baseClass}`}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 text-white hover:text-gray-300"
-        >
-          <Close className="w-5 h-5" />
-        </button>
         <div className="flex items-start gap-4">
           <Icon className="w-8 h-8 flex-shrink-0" />
           <div className="flex-1">
@@ -40,9 +34,9 @@ const Notification = ({ notification, onClose }) => {
             <p className="text-sm whitespace-pre-line">{notification.message}</p>
           </div>
         </div>
-        {notification.actions && notification.actions.length > 0 && (
-          <div className="mt-4 flex justify-end gap-2">
-            {notification.actions.map((action, idx) => (
+        <div className="mt-4 flex justify-center gap-2">
+          {notification.actions && notification.actions.length > 0 &&
+            notification.actions.map((action, idx) => (
               <button
                 key={idx}
                 onClick={action.onClick}
@@ -51,8 +45,13 @@ const Notification = ({ notification, onClose }) => {
                 {action.label}
               </button>
             ))}
-          </div>
-        )}
+          <button
+            onClick={onClose}
+            className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
+          >
+            OK
+          </button>
+        </div>
       </div>
     </div>
   );
