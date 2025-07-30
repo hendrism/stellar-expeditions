@@ -14,8 +14,8 @@ const RunPhase = ({
   riskLevels,
   takeAction,
   scrap,
-  showStuckPopup,
-  setShowStuckPopup,
+  stuckPopup,
+  setStuckPopup,
   inventory,
   missionLog,
   scannerRevealTurns,
@@ -27,7 +27,7 @@ const RunPhase = ({
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl">Mission #{runNumber} - Turn {turn}</h2>
-        <button onClick={endRun} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg">
+        <button onClick={endRun} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
           End Mission
         </button>
       </div>
@@ -98,25 +98,29 @@ const RunPhase = ({
       {currentActions.length === 0 && <div className="text-center text-gray-400 py-8">Generating new opportunities...</div>}
     </div>
 
-    {showStuckPopup && (
+    {stuckPopup && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-800 border-2 border-red-600 rounded-lg p-6 max-w-md mx-4">
-          <h3 className="text-xl font-bold text-red-400 mb-4">⚠️ Insufficient Resources</h3>
+        <div className={`bg-gray-800 border-2 rounded-lg p-6 max-w-md mx-4 ${stuckPopup === 'haveItems' ? 'border-yellow-600' : 'border-red-600'}`}> 
+          <h3 className="text-xl font-bold mb-4 text-yellow-400">⚠️ No Actions Available</h3>
           <p className="text-gray-300 mb-6">
-            You don't have enough resources to take any of the available actions. You can either end the mission now or use items to restore resources.
+            {stuckPopup === 'haveItems'
+              ? "You don't have enough resources to take any actions, but you have cards that might help."
+              : "You have no resources or cards left to continue."}
           </p>
           <div className="flex gap-3">
-            <button onClick={endRun} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors">End Mission</button>
-            <button
-              onClick={() => {
-                setShowStuckPopup(false);
-                goToInventory('run');
-              }}
-              className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg transition-colors"
-            >
-              Use Items ({inventory.filter(c => !c.isEquipped).length})
-            </button>
-            <button onClick={() => setShowStuckPopup(false)} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
+            {stuckPopup === 'haveItems' && (
+              <button
+                onClick={() => {
+                  setStuckPopup(null);
+                  goToInventory('run');
+                }}
+                className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg transition-colors"
+              >
+                Check Cards ({inventory.filter(c => !c.isEquipped).length})
+              </button>
+            )}
+            <button onClick={endRun} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">End Mission</button>
+            <button onClick={() => setStuckPopup(null)} className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
           </div>
         </div>
       </div>
@@ -135,9 +139,9 @@ const RunPhase = ({
 
     {showMissionSummary && missionSummaryData && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className={`rounded-lg p-6 max-w-md mx-4 border-2 ${missionSummaryData.status === 'Mission Complete' ? 'bg-green-900 border-green-600' : 'bg-red-900 border-red-600'}`}>\
+        <div className={`rounded-lg p-6 max-w-md mx-4 border-2 ${missionSummaryData.status === 'Success' ? 'bg-green-900 border-green-600' : missionSummaryData.status === 'Partial Success' ? 'bg-yellow-900 border-yellow-600' : 'bg-red-900 border-red-600'}`}>\
           <h3 className="text-2xl font-bold mb-4 text-center">
-            {missionSummaryData.status === 'Mission Complete' ? '🎉 Mission Complete!' : '⚠️ Mission Ended'}
+            {missionSummaryData.status === 'Success' ? '🎉 Mission Success!' : missionSummaryData.status === 'Partial Success' ? '⚠️ Partial Success' : '💥 Mission Failed'}
           </h3>
           <div className="space-y-3 mb-6">
             <div className="text-center">
@@ -166,7 +170,18 @@ const RunPhase = ({
               </div>
             </div>
           </div>
-          <button onClick={confirmMissionEnd} className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${missionSummaryData.status === 'Mission Complete' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>Continue</button>
+          <button
+            onClick={confirmMissionEnd}
+            className={`w-full py-3 px-4 rounded-lg font-bold transition-colors ${
+              missionSummaryData.status === 'Success'
+                ? 'bg-green-600 hover:bg-green-700'
+                : missionSummaryData.status === 'Partial Success'
+                ? 'bg-yellow-600 hover:bg-yellow-700'
+                : 'bg-red-600 hover:bg-red-700'
+            }`}
+          >
+            Continue
+          </button>
         </div>
       </div>
     )}
