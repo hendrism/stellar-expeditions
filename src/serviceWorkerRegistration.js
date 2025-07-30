@@ -33,8 +33,8 @@ export function register(config) {
 
         navigator.serviceWorker.ready.then(() => {
           console.log(
-            'This web app is being served cache-first by a service '\
-              + 'worker. To learn more, visit https://cra.link/PWA'
+            'This web app is being served cache-first by a service ' +
+              'worker. To learn more, visit https://cra.link/PWA'
           );
         });
       } else {
@@ -57,8 +57,8 @@ function registerValidSW(swUrl, config) {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
               console.log(
-                'New content is available and will be used when all '\
-                  + 'tabs for this page are closed. See https://cra.link/PWA.'
+                'New content is available and will be used when all ' +
+                  'tabs for this page are closed. See https://cra.link/PWA.'
               );
 
               if (config && config.onUpdate) {
