@@ -17,6 +17,33 @@ import InventoryPhase from './components/InventoryPhase';
 import PacksPhase from './components/PacksPhase';
 import UpgradePhase from './components/UpgradePhase';
 
+// Static collections used throughout the game. Defining them once outside the
+// component avoids recreating these objects/arrays on every render or function
+// call, reducing unnecessary allocations.
+const SKILL_TYPES = ['explorer', 'fighter', 'settler'];
+const RISK_KEYS = ['low', 'medium', 'high'];
+const BASE_COSTS = {
+  explorer: { fuel: 3, food: 1, scrap: 0 },
+  fighter: { fuel: 2, food: 3, scrap: 0 },
+  settler: { fuel: 4, food: 3, scrap: 5 },
+};
+const BASE_REWARDS = {
+  explorer: { credits: 12, data: 2, scrap: 0 },
+  fighter: { credits: 18, data: 0, scrap: 3 },
+  settler: { credits: 25, data: 0, scrap: 0 },
+};
+const CARD_TYPE_KEYS = Object.keys(cardTypes);
+
+// Pre-compute cumulative rarity thresholds for faster random card generation
+// without recalculating the distribution each time.
+const RARITY_THRESHOLDS = (() => {
+  let cumulative = 0;
+  return Object.entries(rarities).map(([key, value]) => {
+    cumulative += value.chance;
+    return [key, cumulative];
+  });
+})();
+
 const SpaceCardGame = () => {
   // Game state
   const [gamePhase, setGamePhase] = useState('menu'); // menu, run, packs, upgrade, inventory
@@ -302,24 +329,21 @@ const SpaceCardGame = () => {
     });
   }, [credits, battlesWon, galaxiesExplored, planetsSettled]);
 
-  // Generate random card
+  // Generate random card using precomputed thresholds and card type keys
   const generateCard = () => {
     const rand = Math.random() * 100;
     let rarity = 'common';
-    let cumulative = 0;
-    
-    for (const [key, value] of Object.entries(rarities)) {
-      cumulative += value.chance;
-      if (rand <= cumulative) {
+
+    for (const [key, threshold] of RARITY_THRESHOLDS) {
+      if (rand <= threshold) {
         rarity = key;
         break;
       }
     }
-    
-    const typeKeys = Object.keys(cardTypes);
-    const type = typeKeys[Math.floor(Math.random() * typeKeys.length)];
+
+    const type = CARD_TYPE_KEYS[Math.floor(Math.random() * CARD_TYPE_KEYS.length)];
     const power = getCardPower(rarity);
-    
+
     return {
       id: Date.now() + Math.random(),
       rarity,
@@ -334,48 +358,35 @@ const SpaceCardGame = () => {
   // Generate three actions for current turn
   const generateTurnActions = () => {
     const actions = [];
-    const skillTypes = ['explorer', 'fighter', 'settler'];
-    const riskKeys = ['low', 'medium', 'high'];
-    const bonuses = getEquipmentBonuses();
-    
-    skillTypes.forEach(skillType => {
+    const bonuses = equipmentBonuses;
+
+    SKILL_TYPES.forEach(skillType => {
       // Pick random action template
       const templates = actionTemplates[skillType];
       const template = templates[Math.floor(Math.random() * templates.length)];
-      
+
       // Assign random risk level
-      const riskKey = riskKeys[Math.floor(Math.random() * riskKeys.length)];
+      const riskKey = RISK_KEYS[Math.floor(Math.random() * RISK_KEYS.length)];
       const risk = riskLevels[riskKey];
-      
+
       // Calculate costs and rewards based on skill level and risk
       const skillLevel = skills[skillType];
       const perkMultiplier = skillLevel >= 5 ? 1.2 : skillLevel >= 3 ? 1.1 : 1;
-      const baseCosts = {
-        explorer: { fuel: 3, food: 1, scrap: 0 },
-        fighter: { fuel: 2, food: 3, scrap: 0 },
-        settler: { fuel: 4, food: 3, scrap: 5 }
-      };
-      
-      const baseRewards = {
-        explorer: { credits: 12, data: 2, scrap: 0 },
-        fighter: { credits: 18, data: 0, scrap: 3 },
-        settler: { credits: 25, data: 0, scrap: 0 }
-      };
-      
+
       // Adjust costs based on ship, skills, and equipment
-      let fuelCost = Math.max(1, Math.ceil(baseCosts[skillType].fuel * risk.multiplier) - (ship.fuelEfficiency - 1) - bonuses.fuelCostReduction - Math.floor((skillLevel - 1) / 4));
-      let foodCost = Math.max(1, Math.ceil(baseCosts[skillType].food * risk.multiplier) - Math.floor(skillLevel / 3) - bonuses.foodCostReduction[skillType]);
-      let scrapCost = Math.max(0, Math.ceil(baseCosts[skillType].scrap * risk.multiplier) - Math.floor(skillLevel / 2));
-      
+      let fuelCost = Math.max(1, Math.ceil(BASE_COSTS[skillType].fuel * risk.multiplier) - (ship.fuelEfficiency - 1) - bonuses.fuelCostReduction - Math.floor((skillLevel - 1) / 4));
+      let foodCost = Math.max(1, Math.ceil(BASE_COSTS[skillType].food * risk.multiplier) - Math.floor(skillLevel / 3) - bonuses.foodCostReduction[skillType]);
+      let scrapCost = Math.max(0, Math.ceil(BASE_COSTS[skillType].scrap * risk.multiplier) - Math.floor(skillLevel / 2));
+
       // Calculate potential rewards with equipment bonuses
-      let creditsReward = Math.floor(baseRewards[skillType].credits * risk.multiplier * skillLevel * perkMultiplier * (1 + bonuses.rewardBonus[skillType] / 100));
-      let dataReward = Math.floor(baseRewards[skillType].data * risk.multiplier * skillLevel * perkMultiplier);
-      let scrapReward = Math.floor(baseRewards[skillType].scrap * risk.multiplier * skillLevel * perkMultiplier);
-      
+      let creditsReward = Math.floor(BASE_REWARDS[skillType].credits * risk.multiplier * skillLevel * perkMultiplier * (1 + bonuses.rewardBonus[skillType] / 100));
+      let dataReward = Math.floor(BASE_REWARDS[skillType].data * risk.multiplier * skillLevel * perkMultiplier);
+      let scrapReward = Math.floor(BASE_REWARDS[skillType].scrap * risk.multiplier * skillLevel * perkMultiplier);
+
       // Adjust success chance with equipment bonuses
       let successChance = risk.successChance + (bonuses.successBonus[skillType] / 100);
       successChance = Math.min(0.95, successChance); // Cap at 95%
-      
+
       actions.push({
         id: `${skillType}_${Date.now()}`,
         skillType,
@@ -386,7 +397,7 @@ const SpaceCardGame = () => {
         successChance
       });
     });
-    
+
     return actions;
   };
 
@@ -697,7 +708,7 @@ const checkMissionEnd = (newFuel, newFood) => {
     } else {
       success = Math.random() < effectiveChance;
     }
-    const bonuses = getEquipmentBonuses();
+    const bonuses = equipmentBonuses;
     
     if (success) {
       // Apply rewards
