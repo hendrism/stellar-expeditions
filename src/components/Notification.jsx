@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { CheckCircle, XCircle, Info, X as Close } from 'lucide-react';
 
 const Notification = ({ notification, onClose }) => {
@@ -58,3 +59,20 @@ const Notification = ({ notification, onClose }) => {
 };
 
 export default Notification;
+
+Notification.propTypes = {
+  notification: PropTypes.shape({
+    type: PropTypes.oneOf(['success', 'error', 'info']),
+    title: PropTypes.string.isRequired,
+    message: PropTypes.string.isRequired,
+    count: PropTypes.number,
+    icon: PropTypes.elementType,
+    actions: PropTypes.arrayOf(
+      PropTypes.shape({
+        label: PropTypes.string.isRequired,
+        onClick: PropTypes.func.isRequired
+      })
+    )
+  }),
+  onClose: PropTypes.func.isRequired
+};
