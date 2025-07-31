@@ -22,16 +22,16 @@ const RunPhase = ({
   ship,
   equipmentBonuses
 }) => (
-  <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-3 md:gap-6">
-    <div className="space-y-6 md:col-span-1">
-      <div className="bg-gray-800 rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
+  <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
+    <div className="space-y-4 md:col-span-1">
+      <div className="bg-gray-800 rounded-lg p-4">
+        <div className="flex justify-between items-center mb-3">
           <h2 className="text-2xl">Mission #{runNumber} - Turn {turn}</h2>
           <button onClick={endRun} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">
             End Mission
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Fuel className="w-4 h-4 text-orange-400" />
@@ -51,7 +51,7 @@ const RunPhase = ({
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 text-sm">
+        <div className="grid grid-cols-1 gap-3 text-sm">
           <div>
             <h3 className="text-lg mb-1">Ship Stats</h3>
             <div className="space-y-1">
@@ -80,8 +80,8 @@ const RunPhase = ({
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-lg p-4">
-        <h3 className="text-lg mb-2">Mission Log</h3>
+      <div className="bg-gray-800 rounded-lg p-3">
+        <h3 className="text-lg mb-1">Mission Log</h3>
         <div id="mission-log" className="space-y-1 text-sm max-h-64 overflow-y-auto">
           {missionLog.map((log, index) => (
             <div key={index} className="text-gray-300">
@@ -92,15 +92,15 @@ const RunPhase = ({
       </div>
     </div>
 
-    <div className="md:col-span-2 space-y-6">
-      <div className="bg-gray-800 rounded-lg p-6 h-full">
-        <div className="flex justify-between items-center mb-4">
+    <div className="md:col-span-2 space-y-4">
+      <div className="bg-gray-800 rounded-lg p-4 h-full">
+        <div className="flex justify-between items-center mb-3">
           <h3 className="text-xl">Choose Your Action</h3>
           <button onClick={() => goToInventory('run')} className="bg-orange-600 hover:bg-orange-700 px-3 py-1 rounded text-sm">
             🎒 Use Items
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {currentActions.map(action => {
             const canAfford = fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap;
             const risk = riskLevels[action.risk];
@@ -111,15 +111,15 @@ const RunPhase = ({
                 key={action.id}
                 onClick={() => takeAction(action)}
                 disabled={!canAfford}
-                className={`p-4 rounded-lg transition-colors text-left ${canAfford ? 'bg-gray-700 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-500' : 'bg-gray-800 border-2 border-gray-700 opacity-50 cursor-not-allowed'}`}
+                className={`p-3 rounded-lg transition-colors text-left ${canAfford ? 'bg-gray-700 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-500' : 'bg-gray-800 border-2 border-gray-700 opacity-50 cursor-not-allowed'}`}
               >
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   <ActionIcon className="w-5 h-5" />
                   <span className="font-bold text-lg">{action.template.name}</span>
                   <span className={`text-sm ${risk.color} ml-auto`}>({risk.name})</span>
                 </div>
-                <div className="text-sm text-gray-300 mb-3">{action.template.description}</div>
-                <div className="text-xs space-y-1">
+                <div className="text-sm text-gray-300 mb-2">{action.template.description}</div>
+                <div className="text-xs space-y-0.5">
                   <div className="text-red-300">
                     Costs: {action.costs.fuel} fuel, {action.costs.food} food{action.costs.scrap > 0 && `, ${action.costs.scrap} scrap`}
                   </div>
