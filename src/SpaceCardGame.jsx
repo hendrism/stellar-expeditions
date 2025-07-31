@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Rocket, Coins, Wrench, Trophy } from 'lucide-react';
 import {
   rarities,
@@ -284,6 +284,8 @@ const SpaceCardGame = () => {
     
     return bonuses;
   };
+
+  const equipmentBonuses = useMemo(() => getEquipmentBonuses(), [equippedCards]);
 
   // Check and unlock achievements when relevant values change
   useEffect(() => {
@@ -933,6 +935,8 @@ const checkMissionEnd = (newFuel, newFood) => {
             showMissionSummary={showMissionSummary}
             missionSummaryData={missionSummaryData}
             confirmMissionEnd={confirmMissionEnd}
+            ship={ship}
+            equipmentBonuses={equipmentBonuses}
           />
         )}
 

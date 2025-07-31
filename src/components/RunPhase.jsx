@@ -18,7 +18,9 @@ const RunPhase = ({
   scannerRevealTurns,
   showMissionSummary,
   missionSummaryData,
-  confirmMissionEnd
+  confirmMissionEnd,
+  ship,
+  equipmentBonuses
 }) => (
   <div className="space-y-6">
     <div className="bg-gray-800 rounded-lg p-6">
@@ -45,6 +47,33 @@ const RunPhase = ({
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div className="bg-green-400 h-2 rounded-full transition-all duration-300" style={{ width: `${(food / maxFood) * 100}%` }}></div>
+          </div>
+        </div>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4 mt-4 text-sm">
+        <div>
+          <h3 className="text-lg mb-1">Ship Stats</h3>
+          <div className="space-y-1">
+            <div><span className="font-bold">{ship.name}</span> (Level {ship.level})</div>
+            <div>Fuel Efficiency: {ship.fuelEfficiency}</div>
+            <div>Weapons: {ship.weapons}</div>
+            <div>Cargo: {ship.cargo}</div>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg mb-1">Bonuses</h3>
+          <div className="space-y-1">
+            <div>Fuel Cost Reduction: {equipmentBonuses.fuelCostReduction}</div>
+            <div>
+              Food Cost Reduction (E/F/S): {equipmentBonuses.foodCostReduction.explorer}/{equipmentBonuses.foodCostReduction.fighter}/{equipmentBonuses.foodCostReduction.settler}
+            </div>
+            <div>
+              Success Bonus (E/F/S): {equipmentBonuses.successBonus.explorer}/{equipmentBonuses.successBonus.fighter}/{equipmentBonuses.successBonus.settler}
+            </div>
+            <div>
+              Reward Bonus (E/F/S): {equipmentBonuses.rewardBonus.explorer}/{equipmentBonuses.rewardBonus.fighter}/{equipmentBonuses.rewardBonus.settler}
+            </div>
+            <div>Failure Penalty Reduction: {equipmentBonuses.failurePenaltyReduction}</div>
           </div>
         </div>
       </div>
