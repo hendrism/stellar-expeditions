@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Package, RotateCcw } from 'lucide-react';
 
 const MenuPhase = ({
@@ -116,3 +117,54 @@ const MenuPhase = ({
 );
 
 export default MenuPhase;
+
+MenuPhase.propTypes = {
+  runNumber: PropTypes.number.isRequired,
+  startRun: PropTypes.func.isRequired,
+  setGamePhase: PropTypes.func.isRequired,
+  goToInventory: PropTypes.func.isRequired,
+  inventory: PropTypes.array.isRequired,
+  missionHistory: PropTypes.array.isRequired,
+  ship: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    level: PropTypes.number.isRequired,
+    fuelEfficiency: PropTypes.number.isRequired,
+    weapons: PropTypes.number.isRequired,
+    cargo: PropTypes.number.isRequired,
+    equipmentSlots: PropTypes.shape({
+      weapon: PropTypes.number,
+      scanner: PropTypes.number,
+      engine: PropTypes.number,
+      habitat: PropTypes.number,
+      shield: PropTypes.number,
+      drone: PropTypes.number,
+      medkit: PropTypes.number
+    }).isRequired
+  }).isRequired,
+  equippedCards: PropTypes.shape({
+    weapon: PropTypes.object,
+    scanner: PropTypes.object,
+    engine: PropTypes.object,
+    habitat: PropTypes.object,
+    shield: PropTypes.object,
+    drone: PropTypes.object,
+    medkit: PropTypes.object
+  }).isRequired,
+  skills: PropTypes.shape({
+    explorer: PropTypes.number,
+    fighter: PropTypes.number,
+    settler: PropTypes.number
+  }).isRequired,
+  galaxiesExplored: PropTypes.number.isRequired,
+  planetsSettled: PropTypes.number.isRequired,
+  battlesWon: PropTypes.number.isRequired,
+  prestigePoints: PropTypes.number.isRequired,
+  prestige: PropTypes.func.isRequired,
+  achievements: PropTypes.array.isRequired,
+  achievementDefinitions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string
+    })
+  ).isRequired
+};
