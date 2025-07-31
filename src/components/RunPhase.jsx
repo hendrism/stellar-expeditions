@@ -51,8 +51,8 @@ const RunPhase = ({
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-3 text-sm">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="bg-gray-700 rounded p-3">
             <h3 className="text-lg mb-1">Ship Stats</h3>
             <div className="space-y-1">
               <div><span className="font-bold">{ship.name}</span> (Level {ship.level})</div>
@@ -61,7 +61,7 @@ const RunPhase = ({
               <div>Cargo: {ship.cargo}</div>
             </div>
           </div>
-          <div>
+          <div className="bg-gray-700 rounded p-3">
             <h3 className="text-lg mb-1">Bonuses</h3>
             <div className="space-y-1">
               <div>Fuel Cost Reduction: {equipmentBonuses.fuelCostReduction}</div>
