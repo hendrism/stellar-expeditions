@@ -1,6 +1,14 @@
 import React from 'react';
 import { Fuel, Apple, Search, Sword, Globe } from 'lucide-react';
 
+// Static mapping of skill types to icons. Declared once to avoid
+// recreating the object on every render and on each action iteration.
+const SKILL_ICONS = {
+  explorer: Search,
+  fighter: Sword,
+  settler: Globe,
+};
+
 const RunPhase = ({
   runNumber,
   turn,
@@ -104,8 +112,7 @@ const RunPhase = ({
           {currentActions.map(action => {
             const canAfford = fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap;
             const risk = riskLevels[action.risk];
-            const skillIcons = { explorer: Search, fighter: Sword, settler: Globe };
-            const ActionIcon = skillIcons[action.skillType];
+            const ActionIcon = SKILL_ICONS[action.skillType];
             return (
               <button
                 key={action.id}
