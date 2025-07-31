@@ -21,7 +21,7 @@ import UpgradePhase from './components/UpgradePhase';
 // component avoids recreating these objects/arrays on every render or function
 // call, reducing unnecessary allocations.
 const SKILL_TYPES = ['explorer', 'fighter', 'settler'];
-const RISK_KEYS = ['low', 'medium', 'high'];
+const RISK_OPTIONS = ['low', 'high'];
 const BASE_COSTS = {
   explorer: { fuel: 3, food: 1, scrap: 0 },
   fighter: { fuel: 2, food: 3, scrap: 0 },
@@ -54,18 +54,28 @@ const SpaceCardGame = () => {
   const [notification, setNotification] = useState(null);
   const [notificationQueue, setNotificationQueue] = useState([]);
   
-  // Mission resources (reset each run)
-  const [fuel, setFuel] = useState(20);
-  const [food, setFood] = useState(15);
+  // Mission and persistent resources
+  const [resources, setResources] = useState({
+    fuel: 20,
+    food: 15,
+    credits: 100,
+    scrap: 0,
+    energy: 0,
+    data: 0,
+    prestige: 0,
+  });
   const [maxFuel, setMaxFuel] = useState(20);
   const [maxFood, setMaxFood] = useState(15);
-  
-  // Persistent resources
-  const [credits, setCredits] = useState(100);
-  const [scrap, setScrap] = useState(0);
-  const [energy, setEnergy] = useState(0);
-  const [data, setData] = useState(0);
-  const [prestigePoints, setPrestigePoints] = useState(0);
+
+  const getResource = (key) => resources[key] ?? 0;
+  const adjustResource = (key, amount) => {
+    setResources(prev => {
+      const max = key === 'fuel' ? maxFuel : key === 'food' ? maxFood : undefined;
+      let value = (prev[key] ?? 0) + amount;
+      if (max !== undefined) value = Math.min(max, value);
+      return { ...prev, [key]: Math.max(0, value) };
+    });
+  };
   
   // Skills
   const [skills, setSkills] = useState({
@@ -146,11 +156,7 @@ const SpaceCardGame = () => {
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        setCredits(data.credits ?? 100);
-        setScrap(data.scrap ?? 0);
-        setEnergy(data.energy ?? 0);
-        setData(data.data ?? 0);
-        setPrestigePoints(data.prestigePoints ?? 0);
+        if (data.resources) setResources(data.resources);
         if (data.skills) setSkills(data.skills);
         if (data.inventory) setInventory(data.inventory);
         if (data.equippedCards) setEquippedCards(data.equippedCards);
@@ -170,11 +176,7 @@ const SpaceCardGame = () => {
   // Save state whenever important values change
   useEffect(() => {
     const state = {
-      credits,
-      scrap,
-      energy,
-      data,
-      prestigePoints,
+      resources,
       skills,
       inventory,
       equippedCards,
@@ -187,7 +189,7 @@ const SpaceCardGame = () => {
       achievements,
     };
     localStorage.setItem('stellarSave', JSON.stringify(state));
-  }, [credits, scrap, energy, data, prestigePoints, skills, inventory, equippedCards, ship, missionHistory, galaxiesExplored, planetsSettled, battlesWon, runNumber, achievements]);
+  }, [resources, skills, inventory, equippedCards, ship, missionHistory, galaxiesExplored, planetsSettled, battlesWon, runNumber, achievements]);
   
   // Auto-scroll mission log
   useEffect(() => {
@@ -248,7 +250,7 @@ const SpaceCardGame = () => {
   // Check if any actions are affordable
   const checkActionsAffordable = (actions) => {
     const anyAffordable = actions.some(action =>
-      fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap
+      resources.fuel >= action.costs.fuel && resources.food >= action.costs.food && resources.scrap >= action.costs.scrap
     );
 
     if (!anyAffordable && actions.length > 0) {
@@ -314,10 +316,33 @@ const SpaceCardGame = () => {
 
   const equipmentBonuses = useMemo(() => getEquipmentBonuses(), [equippedCards]);
 
+  const getSkillSynergy = () => {
+    const synergy = { explorer: 0, fighter: 0, settler: 0 };
+    if (skills.explorer >= 3 && skills.fighter >= 3) {
+      synergy.explorer += 0.05;
+      synergy.fighter += 0.05;
+    }
+    if (skills.explorer >= 3 && skills.settler >= 3) {
+      synergy.explorer += 0.05;
+      synergy.settler += 0.05;
+    }
+    if (skills.fighter >= 3 && skills.settler >= 3) {
+      synergy.fighter += 0.05;
+      synergy.settler += 0.05;
+    }
+    return synergy;
+  };
+
+  const getSpecialization = () => {
+    const entries = Object.entries(skills).sort((a, b) => b[1] - a[1]);
+    if (entries[0][1] >= entries[1][1] + 2) return entries[0][0];
+    return null;
+  };
+
   // Check and unlock achievements when relevant values change
   useEffect(() => {
     const state = {
-      credits,
+      credits: resources.credits,
       battlesWon,
       galaxiesExplored,
       planetsSettled,
@@ -327,7 +352,7 @@ const SpaceCardGame = () => {
         unlockAchievement(def.id);
       }
     });
-  }, [credits, battlesWon, galaxiesExplored, planetsSettled]);
+  }, [resources.credits, battlesWon, galaxiesExplored, planetsSettled]);
 
   // Generate random card using precomputed thresholds and card type keys
   const generateCard = () => {
@@ -355,46 +380,48 @@ const SpaceCardGame = () => {
     };
   };
 
-  // Generate three actions for current turn
+  // Generate actions for current turn with branching risk options
   const generateTurnActions = () => {
     const actions = [];
     const bonuses = equipmentBonuses;
+    const synergy = getSkillSynergy();
+    const specialization = getSpecialization();
 
     SKILL_TYPES.forEach(skillType => {
-      // Pick random action template
       const templates = actionTemplates[skillType];
       const template = templates[Math.floor(Math.random() * templates.length)];
 
-      // Assign random risk level
-      const riskKey = RISK_KEYS[Math.floor(Math.random() * RISK_KEYS.length)];
-      const risk = riskLevels[riskKey];
+      RISK_OPTIONS.forEach(riskKey => {
+        const risk = riskLevels[riskKey];
+        const skillLevel = skills[skillType];
+        const perkMultiplier = skillLevel >= 5 ? 1.2 : skillLevel >= 3 ? 1.1 : 1;
 
-      // Calculate costs and rewards based on skill level and risk
-      const skillLevel = skills[skillType];
-      const perkMultiplier = skillLevel >= 5 ? 1.2 : skillLevel >= 3 ? 1.1 : 1;
+        let fuelCost = Math.max(1, Math.ceil(BASE_COSTS[skillType].fuel * risk.multiplier) - (ship.fuelEfficiency - 1) - bonuses.fuelCostReduction - Math.floor((skillLevel - 1) / 4));
+        let foodCost = Math.max(1, Math.ceil(BASE_COSTS[skillType].food * risk.multiplier) - Math.floor(skillLevel / 3) - bonuses.foodCostReduction[skillType]);
+        let scrapCost = Math.max(0, Math.ceil(BASE_COSTS[skillType].scrap * risk.multiplier) - Math.floor(skillLevel / 2));
 
-      // Adjust costs based on ship, skills, and equipment
-      let fuelCost = Math.max(1, Math.ceil(BASE_COSTS[skillType].fuel * risk.multiplier) - (ship.fuelEfficiency - 1) - bonuses.fuelCostReduction - Math.floor((skillLevel - 1) / 4));
-      let foodCost = Math.max(1, Math.ceil(BASE_COSTS[skillType].food * risk.multiplier) - Math.floor(skillLevel / 3) - bonuses.foodCostReduction[skillType]);
-      let scrapCost = Math.max(0, Math.ceil(BASE_COSTS[skillType].scrap * risk.multiplier) - Math.floor(skillLevel / 2));
+        let creditsReward = Math.floor(BASE_REWARDS[skillType].credits * risk.multiplier * skillLevel * perkMultiplier * (1 + bonuses.rewardBonus[skillType] / 100));
+        let dataReward = Math.floor(BASE_REWARDS[skillType].data * risk.multiplier * skillLevel * perkMultiplier);
+        let scrapReward = Math.floor(BASE_REWARDS[skillType].scrap * risk.multiplier * skillLevel * perkMultiplier);
 
-      // Calculate potential rewards with equipment bonuses
-      let creditsReward = Math.floor(BASE_REWARDS[skillType].credits * risk.multiplier * skillLevel * perkMultiplier * (1 + bonuses.rewardBonus[skillType] / 100));
-      let dataReward = Math.floor(BASE_REWARDS[skillType].data * risk.multiplier * skillLevel * perkMultiplier);
-      let scrapReward = Math.floor(BASE_REWARDS[skillType].scrap * risk.multiplier * skillLevel * perkMultiplier);
+        if (specialization === skillType) {
+          creditsReward = Math.floor(creditsReward * 1.1);
+          dataReward = Math.floor(dataReward * 1.1);
+          scrapReward = Math.floor(scrapReward * 1.1);
+        }
 
-      // Adjust success chance with equipment bonuses
-      let successChance = risk.successChance + (bonuses.successBonus[skillType] / 100);
-      successChance = Math.min(0.95, successChance); // Cap at 95%
+        let successChance = risk.successChance + (bonuses.successBonus[skillType] / 100) + synergy[skillType];
+        successChance = Math.min(0.95, successChance);
 
-      actions.push({
-        id: `${skillType}_${Date.now()}`,
-        skillType,
-        template,
-        risk: riskKey,
-        costs: { fuel: fuelCost, food: foodCost, scrap: scrapCost },
-        rewards: { credits: creditsReward, data: dataReward, scrap: scrapReward },
-        successChance
+        actions.push({
+          id: `${skillType}_${riskKey}_${Date.now()}_${Math.random()}`,
+          skillType,
+          template,
+          risk: riskKey,
+          costs: { fuel: fuelCost, food: foodCost, scrap: scrapCost },
+          rewards: { credits: creditsReward, data: dataReward, scrap: scrapReward },
+          successChance
+        });
       });
     });
 
@@ -491,13 +518,13 @@ const SpaceCardGame = () => {
         break;
       case 'habitat':
         const foodRestore = card.consumePower * 2;
-        setFood(prev => Math.min(maxFood, prev + foodRestore));
+        adjustResource('food', foodRestore);
         addToLog(`🏠 Used ${card.name} - restored ${foodRestore} food!`);
         showNotification('🏠 Food Restored', `${card.name}\n+${foodRestore} food supplies`, 'success');
         break;
       case 'engine':
         const fuelRestore = card.consumePower * 2;
-        setFuel(prev => Math.min(maxFuel, prev + fuelRestore));
+        adjustResource('fuel', fuelRestore);
         addToLog(`⚡ Used ${card.name} - restored ${fuelRestore} fuel!`);
         showNotification('⚡ Fuel Restored', `${card.name}\n+${fuelRestore} fuel supplies`, 'success');
         break;
@@ -513,8 +540,8 @@ const SpaceCardGame = () => {
         break;
       case 'medkit':
         const restore = card.consumePower * 2;
-        setFuel(prev => Math.min(maxFuel, prev + restore));
-        setFood(prev => Math.min(maxFood, prev + restore));
+        adjustResource('fuel', restore);
+        adjustResource('food', restore);
         addToLog(`🩺 Used ${card.name} - restored ${restore} fuel and food!`);
         showNotification('🩺 Supplies Restored', `${card.name}\n+${restore} fuel & food`, 'success');
         break;
@@ -528,8 +555,8 @@ const SpaceCardGame = () => {
 
   // Open card pack
   const openPack = () => {
-    if (credits >= 50) {
-      setCredits(prev => prev - 50);
+    if (resources.credits >= 50) {
+      adjustResource('credits', -50);
       const newCards = Array.from({ length: 5 }, () => generateCard());
       setInventory(prev => [...prev, ...newCards]);
     }
@@ -539,8 +566,7 @@ const SpaceCardGame = () => {
   const startRun = () => {
     const baseFuel = 20 + (ship.level * 3);
     const baseFood = 15 + (ship.level * 2);
-    setFuel(baseFuel);
-    setFood(baseFood);
+    setResources(prev => ({ ...prev, fuel: baseFuel, food: baseFood }));
     setMaxFuel(baseFuel);
     setMaxFood(baseFood);
     setNextFighterAutoSuccess(false);
@@ -601,10 +627,10 @@ const SpaceCardGame = () => {
     if (!missionSummaryData) return;
     
     // Apply the rewards
-    setScrap(prev => prev + missionSummaryData.gains.scrap);
-    setEnergy(prev => prev + missionSummaryData.gains.energy);
-    setData(prev => prev + missionSummaryData.gains.data);
-    setPrestigePoints(prev => prev + missionSummaryData.gains.prestige);
+    adjustResource('scrap', missionSummaryData.gains.scrap);
+    adjustResource('energy', missionSummaryData.gains.energy);
+    adjustResource('data', missionSummaryData.gains.data);
+    adjustResource('prestige', missionSummaryData.gains.prestige);
     
     // Add to mission history
     const missionRecord = {
@@ -642,31 +668,9 @@ const checkMissionEnd = (newFuel, newFood) => {
       const textParts = [];
 
       Object.entries(effects).forEach(([resource, value]) => {
-        const absAmount = Math.abs(value);
         const gain = value > 0;
-        textParts.push(`${gain ? '+' : '-'}${absAmount} ${resource}`);
-        switch (resource) {
-          case 'fuel':
-            setFuel(prev => gain ? Math.min(maxFuel, prev + absAmount) : Math.max(0, prev - absAmount));
-            break;
-          case 'food':
-            setFood(prev => gain ? Math.min(maxFood, prev + absAmount) : Math.max(0, prev - absAmount));
-            break;
-          case 'scrap':
-            setScrap(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
-            break;
-          case 'data':
-            setData(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
-            break;
-          case 'energy':
-            setEnergy(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
-            break;
-          case 'credits':
-            setCredits(prev => gain ? prev + absAmount : Math.max(0, prev - absAmount));
-            break;
-          default:
-            break;
-        }
+        textParts.push(`${gain ? '+' : ''}${value} ${resource}`);
+        adjustResource(resource, value);
       });
 
       const text = `${event.text} ${textParts.join(', ')}`;
@@ -680,16 +684,16 @@ const checkMissionEnd = (newFuel, newFood) => {
   // Take action
   const takeAction = (action) => {
     // Check if we have enough resources
-    if (fuel < action.costs.fuel || food < action.costs.food || scrap < action.costs.scrap) {
+    if (resources.fuel < action.costs.fuel || resources.food < action.costs.food || resources.scrap < action.costs.scrap) {
       return;
     }
 
     // Deduct costs
-    const newFuel = fuel - action.costs.fuel;
-    const newFood = food - action.costs.food;
-    setFuel(newFuel);
-    setFood(newFood);
-    setScrap(prev => prev - action.costs.scrap);
+    const newFuel = resources.fuel - action.costs.fuel;
+    const newFood = resources.food - action.costs.food;
+    adjustResource('fuel', -action.costs.fuel);
+    adjustResource('food', -action.costs.food);
+    adjustResource('scrap', -action.costs.scrap);
     setTurn(prev => prev + 1);
     setActionTypeCounts(prev => ({
       ...prev,
@@ -712,9 +716,9 @@ const checkMissionEnd = (newFuel, newFood) => {
     
     if (success) {
       // Apply rewards
-      setCredits(prev => prev + action.rewards.credits);
-      setData(prev => prev + action.rewards.data);
-      setScrap(prev => prev + action.rewards.scrap);
+      adjustResource('credits', action.rewards.credits);
+      adjustResource('data', action.rewards.data);
+      adjustResource('scrap', action.rewards.scrap);
       setSuccessfulActions(prev => prev + 1);
       
       // Check for special achievements
@@ -752,17 +756,17 @@ const checkMissionEnd = (newFuel, newFood) => {
         notificationMessage = 'Failure protected - no penalties';
       } else if (action.skillType === 'explorer') {
         const dataLoss = Math.max(0, Math.floor(Math.random() * 2) + 1 - Math.floor(bonuses.failurePenaltyReduction / 20));
-        setData(prev => Math.max(0, prev - dataLoss));
+        adjustResource('data', -dataLoss);
         failureEffect = dataLoss > 0 ? `Lost ${dataLoss} data from equipment malfunction.` : 'Equipment damage prevented by protective systems.';
         notificationMessage = dataLoss > 0 ? `Equipment malfunction!\n-${dataLoss} data` : 'Equipment protected by systems';
       } else if (action.skillType === 'fighter') {
         const foodLoss = Math.max(0, Math.floor(Math.random() * 3) + 1 - Math.floor(bonuses.failurePenaltyReduction / 20));
-        setFood(prev => Math.max(0, prev - foodLoss));
+        adjustResource('food', -foodLoss);
         failureEffect = foodLoss > 0 ? `Lost ${foodLoss} food from battle injuries.` : 'Injuries prevented by protective systems.';
         notificationMessage = foodLoss > 0 ? `Battle injuries sustained!\n-${foodLoss} food` : 'Injuries prevented by protection';
       } else if (action.skillType === 'settler') {
         const scrapLoss = Math.max(0, Math.floor(Math.random() * 4) + 2 - Math.floor(bonuses.failurePenaltyReduction / 15));
-        setScrap(prev => Math.max(0, prev - scrapLoss));
+        adjustResource('scrap', -scrapLoss);
         failureEffect = scrapLoss > 0 ? `Lost ${scrapLoss} scrap from failed construction.` : 'Construction failure mitigated by protective systems.';
         notificationMessage = scrapLoss > 0 ? `Construction failed!\n-${scrapLoss} scrap` : 'Failure mitigated by systems';
       }
@@ -796,17 +800,17 @@ const checkMissionEnd = (newFuel, newFood) => {
   // Upgrades
   const upgradeSkill = (skill) => {
     const cost = skills[skill] * 10;
-    if (prestigePoints >= cost) {
-      setPrestigePoints(prev => prev - cost);
+    if (resources.prestige >= cost) {
+      adjustResource('prestige', -cost);
       setSkills(prev => ({ ...prev, [skill]: prev[skill] + 1 }));
     }
   };
-  
+
   const upgradeShip = () => {
     const cost = ship.level * 20;
-    if (scrap >= cost && energy >= cost/2) {
-      setScrap(prev => prev - cost);
-      setEnergy(prev => prev - cost/2);
+    if (resources.scrap >= cost && resources.energy >= cost/2) {
+      adjustResource('scrap', -cost);
+      adjustResource('energy', -(cost/2));
       setShip(prev => ({
         ...prev,
         level: prev.level + 1,
@@ -830,10 +834,16 @@ const checkMissionEnd = (newFuel, newFood) => {
   // Prestige reset
   const prestige = () => {
     if (window.confirm('Are you sure you want to prestige? This will reset most progress but give you permanent bonuses.')) {
-      setCredits(100);
-      setScrap(0);
-      setEnergy(0);
-      setData(0);
+      setResources(prev => ({
+        ...prev,
+        fuel: 20,
+        food: 15,
+        credits: 100,
+        scrap: 0,
+        energy: 0,
+        data: 0,
+        prestige: 0,
+      }));
       setInventory([]);
       setEquippedCards({
         weapon: [],
@@ -888,20 +898,20 @@ const checkMissionEnd = (newFuel, newFood) => {
           <div className="flex justify-center gap-6 text-sm">
             <div className="flex items-center gap-1">
               <Coins className="text-yellow-400 w-4 h-4" />
-              {credits}
+              {resources.credits}
             </div>
             <div className="flex items-center gap-1">
               <Wrench className="text-gray-400 w-4 h-4" />
-              {scrap}
+              {resources.scrap}
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-blue-400">⚡</span> {energy}
+              <span className="text-blue-400">⚡</span> {resources.energy}
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-green-400">📊</span> {data}
+              <span className="text-green-400">📊</span> {resources.data}
             </div>
             <div className="flex items-center gap-1">
-              <Trophy className="text-purple-400 w-4 h-4" /> {prestigePoints}
+              <Trophy className="text-purple-400 w-4 h-4" /> {resources.prestige}
             </div>
           </div>
         </header>
@@ -920,7 +930,7 @@ const checkMissionEnd = (newFuel, newFood) => {
             galaxiesExplored={galaxiesExplored}
             planetsSettled={planetsSettled}
             battlesWon={battlesWon}
-            prestigePoints={prestigePoints}
+            prestigePoints={resources.prestige}
             prestige={prestige}
             achievements={achievements}
             achievementDefinitions={achievementDefinitions}
@@ -932,15 +942,15 @@ const checkMissionEnd = (newFuel, newFood) => {
             runNumber={runNumber}
             turn={turn}
             endRun={endRun}
-            fuel={fuel}
+            fuel={resources.fuel}
             maxFuel={maxFuel}
-            food={food}
+            food={resources.food}
             maxFood={maxFood}
             goToInventory={goToInventory}
             currentActions={currentActions}
             riskLevels={riskLevels}
             takeAction={takeAction}
-            scrap={scrap}
+            scrap={resources.scrap}
             missionLog={missionLog}
             scannerRevealTurns={scannerRevealTurns}
             showMissionSummary={showMissionSummary}
@@ -969,17 +979,17 @@ const checkMissionEnd = (newFuel, newFood) => {
         )}
 
         {gamePhase === 'packs' && (
-          <PacksPhase inventory={inventory} credits={credits} setGamePhase={setGamePhase} openPack={openPack} />
+          <PacksPhase inventory={inventory} credits={resources.credits} setGamePhase={setGamePhase} openPack={openPack} />
         )}
 
         {gamePhase === 'upgrade' && (
           <UpgradePhase
             skills={skills}
-            prestigePoints={prestigePoints}
+            prestigePoints={resources.prestige}
             upgradeSkill={upgradeSkill}
             ship={ship}
-            scrap={scrap}
-            energy={energy}
+            scrap={resources.scrap}
+            energy={resources.energy}
             upgradeShip={upgradeShip}
             setGamePhase={setGamePhase}
           />
