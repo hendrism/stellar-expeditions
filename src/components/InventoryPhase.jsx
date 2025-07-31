@@ -34,6 +34,15 @@ const InventoryPhase = ({
             const order = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
             return order[b.rarity] - order[a.rarity];
           });
+        const groupedCards = Object.values(
+          availableCards.reduce((acc, card) => {
+            const key = `${card.type}-${card.rarity}-${card.equipPower}-${card.consumePower}`;
+            if (!acc[key]) acc[key] = { ...card, ids: [], count: 0 };
+            acc[key].ids.push(card.id);
+            acc[key].count++;
+            return acc;
+          }, {})
+        );
         const rarityCounts = availableCards.reduce((acc, card) => {
           acc[card.rarity] = (acc[card.rarity] || 0) + 1;
           return acc;
@@ -61,7 +70,7 @@ const InventoryPhase = ({
                         <SlotIcon className="mx-auto mb-1" size={16} />
                         <div className="text-xs font-bold">{rarities[card.rarity].name}</div>
                         <div className="text-xs">{cardTypes[card.type]?.name}</div>
-                        <div className="text-xs mt-1">+{card.equipPower}</div>
+                        <div className="text-xs mt-1">⚙️+{card.equipPower}</div>
                         <button onClick={() => unequipCard(card.id)} className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white text-xs px-1 py-0.5 rounded">✕</button>
                       </div>
                     ) : (
@@ -73,31 +82,31 @@ const InventoryPhase = ({
                 );
               })}
             </div>
-            {availableCards.length > 0 ? (
+            {groupedCards.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {availableCards.map(card => {
+                {groupedCards.map(card => {
                   const canEquip = equipped.length < maxSlots;
+                  const id = card.ids[0];
                   return (
-                    <div key={card.id} className={`${rarities[card.rarity].color} p-3 rounded-lg text-center text-xs relative shadow-md hover:shadow-xl transform hover:scale-105 transition-transform`}>
+                    <div key={id} className={`${rarities[card.rarity].color} p-3 rounded-lg text-center text-xs relative shadow-md hover:shadow-xl transform hover:scale-105 transition-transform`}>
                       <SlotIcon className="mx-auto mb-1" size={16} />
                       <div className="font-bold">{rarities[card.rarity].name}</div>
                       <div>{cardInfo?.name}</div>
-                      <div className="mt-1">
-                        <div>Equip: +{card.equipPower}</div>
-                        <div>Use: +{card.consumePower}</div>
+                      <div className="mt-1 flex justify-center gap-2">
+                        <div>⚙️+{card.equipPower}</div>
+                        <div>💊+{card.consumePower}</div>
                       </div>
                       <div className="mt-2 space-y-1">
                         {canEquip ? (
-                          <button onClick={() => equipCard(card.id)} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded">Equip</button>
+                          <button onClick={() => equipCard(id)} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded">Equip</button>
                         ) : (
                           <div className="text-xs text-gray-400 mb-1">Slots full</div>
                         )}
-                        <button onClick={() => consumeCard(card.id)} className="w-full bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded">Use</button>
+                        <button onClick={() => consumeCard(id)} className="w-full bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded">Use</button>
                       </div>
-                      <div className="text-xs mt-1 text-gray-200">
-                        <div>⚙️ {cardInfo?.equipEffect}</div>
-                        <div>💊 {cardInfo?.consumeEffect}</div>
-                      </div>
+                      {card.count > 1 && (
+                        <div className="absolute top-1 left-1 bg-gray-900 text-white text-xs px-1 py-0.5 rounded">x{card.count}</div>
+                      )}
                     </div>
                   );
                 })}
