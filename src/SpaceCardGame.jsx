@@ -316,6 +316,18 @@ const SpaceCardGame = () => {
 
   const equipmentBonuses = useMemo(() => getEquipmentBonuses(), [equippedCards]);
 
+  // Track which card categories are available for quick action hints
+  const availableCardCategories = useMemo(() => {
+    const categories = new Set();
+    inventory.forEach(card => {
+      if (!card.isEquipped) {
+        const category = cardTypes[card.type]?.category;
+        if (category) categories.add(category);
+      }
+    });
+    return Array.from(categories);
+  }, [inventory]);
+
   const getSkillSynergy = () => {
     const synergy = { explorer: 0, fighter: 0, settler: 0 };
     if (skills.explorer >= 3 && skills.fighter >= 3) {
@@ -958,6 +970,7 @@ const checkMissionEnd = (newFuel, newFood) => {
             confirmMissionEnd={confirmMissionEnd}
             ship={ship}
             equipmentBonuses={equipmentBonuses}
+            availableCardCategories={availableCardCategories}
           />
         )}
 

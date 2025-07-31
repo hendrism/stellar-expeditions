@@ -1,5 +1,5 @@
 import React from 'react';
-import { Fuel, Apple, Search, Sword, Globe } from 'lucide-react';
+import { Fuel, Apple, Search, Sword, Globe, Star } from 'lucide-react';
 
 // Static mapping of skill types to icons. Declared once to avoid
 // recreating the object on every render and on each action iteration.
@@ -28,7 +28,8 @@ const RunPhase = ({
   missionSummaryData,
   confirmMissionEnd,
   ship,
-  equipmentBonuses
+  equipmentBonuses,
+  availableCardCategories
 }) => (
   <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4">
     <div className="space-y-4 md:col-span-1">
@@ -113,13 +114,25 @@ const RunPhase = ({
             const canAfford = fuel >= action.costs.fuel && food >= action.costs.food && scrap >= action.costs.scrap;
             const risk = riskLevels[action.risk];
             const ActionIcon = SKILL_ICONS[action.skillType];
+            const hasBoostCard =
+              availableCardCategories.includes(action.skillType) ||
+              availableCardCategories.includes('all');
             return (
               <button
                 key={action.id}
                 onClick={() => takeAction(action)}
                 disabled={!canAfford}
-                className={`p-3 rounded-lg transition-colors text-left ${canAfford ? 'bg-gray-700 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-500' : 'bg-gray-800 border-2 border-gray-700 opacity-50 cursor-not-allowed'}`}
+                className={`p-3 rounded-lg transition-colors text-left relative ${
+                  canAfford
+                    ? hasBoostCard
+                      ? 'bg-gray-700 hover:bg-gray-600 border-2 border-yellow-400 hover:border-yellow-300'
+                      : 'bg-gray-700 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-500'
+                    : 'bg-gray-800 border-2 border-gray-700 opacity-50 cursor-not-allowed'
+                }`}
               >
+                {hasBoostCard && (
+                  <Star className="w-4 h-4 text-yellow-400 absolute top-1 right-1" />
+                )}
                 <div className="flex items-center gap-2 mb-1">
                   <ActionIcon className="w-5 h-5" />
                   <span className="font-bold text-lg">{action.template.name}</span>
