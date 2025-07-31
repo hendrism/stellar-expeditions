@@ -42,7 +42,7 @@ const MenuPhase = ({
       </div>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div className="bg-gray-800 rounded-lg p-6">
         <h3 className="text-xl mb-3">Ship Status</h3>
         <div className="space-y-2">
@@ -70,38 +70,38 @@ const MenuPhase = ({
           <div>🏛️ Settler: Level {skills.settler}</div>
         </div>
       </div>
-    </div>
 
-    <div className="bg-gray-800 rounded-lg p-6">
-      <h3 className="text-xl mb-3">Career Statistics</h3>
-      <div className="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <div className="text-2xl">{galaxiesExplored}</div>
-          <div className="text-sm text-gray-400">Galaxies Explored</div>
-        </div>
-        <div>
-          <div className="text-2xl">{planetsSettled}</div>
-          <div className="text-sm text-gray-400">Planets Settled</div>
-        </div>
-        <div>
-          <div className="text-2xl">{battlesWon}</div>
-          <div className="text-sm text-gray-400">Battles Won</div>
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h3 className="text-xl mb-3">Career Statistics</h3>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-2xl">{galaxiesExplored}</div>
+            <div className="text-sm text-gray-400">Galaxies Explored</div>
+          </div>
+          <div>
+            <div className="text-2xl">{planetsSettled}</div>
+            <div className="text-sm text-gray-400">Planets Settled</div>
+          </div>
+          <div>
+            <div className="text-2xl">{battlesWon}</div>
+            <div className="text-sm text-gray-400">Battles Won</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div className="bg-gray-800 rounded-lg p-6">
-      <h3 className="text-xl mb-3">Achievements</h3>
-      {achievements.length === 0 ? (
-        <div className="text-center text-gray-400">No achievements yet.</div>
-      ) : (
-        <ul className="list-disc pl-5 space-y-1 text-sm">
-          {achievements.map(id => {
-            const def = achievementDefinitions.find(a => a.id === id);
-            return <li key={id}>{def ? def.name : id}</li>;
-          })}
-        </ul>
-      )}
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h3 className="text-xl mb-3">Achievements</h3>
+        {achievements.length === 0 ? (
+          <div className="text-center text-gray-400">No achievements yet.</div>
+        ) : (
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            {achievements.map(id => {
+              const def = achievementDefinitions.find(a => a.id === id);
+              return <li key={id}>{def ? def.name : id}</li>;
+            })}
+          </ul>
+        )}
+      </div>
     </div>
 
     {prestigePoints >= 50 && (
