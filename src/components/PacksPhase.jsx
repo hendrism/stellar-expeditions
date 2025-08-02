@@ -39,9 +39,9 @@ const PacksPhase = ({ inventory, credits, setGamePhase, openPack }) => {
                 <CardIcon className="mx-auto mb-1" size={16} />
                 <div className="font-bold">{rarities[card.rarity].name}</div>
                 <div>{cardTypes[card.type]?.name}</div>
-                <div className="mt-1 flex justify-center gap-2">
-                  <div>⚙️+{card.equipPower}</div>
-                  <div>💊+{card.consumePower}</div>
+                <div className="mt-1 text-left">
+                  <div>⚙️ {cardTypes[card.type]?.equipEffect} (+{card.equipPower})</div>
+                  <div>💊 {cardTypes[card.type]?.consumeEffect} (+{card.consumePower})</div>
                 </div>
                 {card.count > 1 && (
                   <div className="absolute top-1 left-1 bg-gray-900 text-white text-xs px-1 py-0.5 rounded">x{card.count}</div>

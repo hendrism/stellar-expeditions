@@ -70,7 +70,7 @@ const InventoryPhase = ({
                         <SlotIcon className="mx-auto mb-1" size={16} />
                         <div className="text-xs font-bold">{rarities[card.rarity].name}</div>
                         <div className="text-xs">{cardTypes[card.type]?.name}</div>
-                        <div className="text-xs mt-1">⚙️+{card.equipPower}</div>
+                        <div className="text-xs mt-1 text-left">⚙️ {cardInfo?.equipEffect} (+{card.equipPower})</div>
                         <button onClick={() => unequipCard(card.id)} className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white text-xs px-1 py-0.5 rounded">✕</button>
                       </div>
                     ) : (
@@ -92,9 +92,9 @@ const InventoryPhase = ({
                       <SlotIcon className="mx-auto mb-1" size={16} />
                       <div className="font-bold">{rarities[card.rarity].name}</div>
                       <div>{cardInfo?.name}</div>
-                      <div className="mt-1 flex justify-center gap-2">
-                        <div>⚙️+{card.equipPower}</div>
-                        <div>💊+{card.consumePower}</div>
+                      <div className="mt-1 text-left">
+                        <div>⚙️ {cardInfo?.equipEffect} (+{card.equipPower})</div>
+                        <div>💊 {cardInfo?.consumeEffect} (+{card.consumePower})</div>
                       </div>
                       <div className="mt-2 space-y-1">
                         {canEquip ? (
